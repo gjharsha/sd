@@ -606,7 +606,7 @@ else
 void sd_create_output_folder(char *buffer1, char *buffer2, char *fname)
 {
     int status;
-    strcpy(buffer1, "mkdir ./sdoutput");
+    strcpy(buffer1, "mkdir ./instance/sdoutput");
 	status = system(buffer1);
     if(status == -1){
         printf("system() call fails.\n");
@@ -619,7 +619,7 @@ void sd_create_output_folder(char *buffer1, char *buffer2, char *fname)
         printf("system() call fails.\n");
         exit(1);
     }
-	strcpy(buffer1, "./sdoutput/");
+	strcpy(buffer1, "./instance/sdoutput/");
 	strcat(buffer1, fname);
 }
 

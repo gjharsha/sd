@@ -1680,7 +1680,8 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 		sd_global->config.EVAL_SEED1 = -1;
 	}
 
-	f_in = fopen("config.sd", "r");
+	system("pwd");
+	f_in = fopen("./instance/config.sd", "r");
 
 	if (f_in == NULL)
 	{
@@ -2003,7 +2004,7 @@ int get_file(FILE **fptr, char *fname, char *extension, char *probname)
 {
 	char file_name[STRSIZE], *p, *q;
 
-	strcpy(file_name, "./sdinput/");
+	strcpy(file_name, "./instance/sdinput/");
 	strcat(file_name, fname);
 	strcat(file_name, "/");
 	strcat(file_name, fname);
@@ -2159,7 +2160,7 @@ int load_core_cpx(sdglobal_type* sd_global, one_problem **original, identity **i
 	/* read COR file from input folder modified by Yifan 2013.05.20 */
 	/* the folder structure looks like this ./sdinput/prob_name/prob_name.cor */
 
-	strcpy(name, "./sdinput/");
+	strcpy(name, "./instance/sdinput/");
 	strcat(name, fname);
 	strcat(name, "/");
 	strcat(name, fname);
