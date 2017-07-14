@@ -1,0 +1,49 @@
+import numpy as np
+
+g = open('sgpf5y6.sce','r')
+numScen = 0; scenName = []; scenProb = []
+numOmega = 0; numVal = []; parent = -1
+rowName = []; colName = []
+val = np.empty([1000,5000])
+for line in g:
+    if ( line.find('SC') > 0 ):
+        fields = line.split()
+        scenName.append(fields[1])
+        scenProb.append(fields[3])
+        if ( fields[2] != "ROOT"):
+            parent = 0
+            while ( scenName[parent] != fields[2] ):
+                parent = parent + 1
+            for i in range(0,numOmega):
+                val[i,numScen] = val[i,parent]
+        numScen = numScen + 1
+    elif (line.find("NAME") == -1 & line.find("SCENARIOS") == -1 & line.find("ENDATA") == -1 ):
+        fields = line.split()
+        i = 0
+        while ( i < numOmega ):
+            if ( fields[0] == colName[i] and fields[1] == rowName[i]):
+                break
+            i = i + 1
+        if (i == numOmega):
+            # New omega
+            colName.append(fields[0])
+            rowName.append(fields[1])
+            numVal.append(0)
+            numOmega = numOmega + 1
+        val[i, (numScen-1)] = float(fields[2])
+        numVal[i] = numVal[i] + 1
+        
+g.close()
+
+f = open('sgpf5y6.sto','w')
+
+f.write('STOCH          sgpf5y4\n')
+f.write('BLOCKS        DISCRETE\n')
+for n in range(0,numScen):
+    f.write(' BL BLOCK%03d  PERIOD02        %s\n' % (n+1,scenProb[n]) )
+    for i in range(0,numOmega):
+        if numVal[i] > 1:
+            f.write('   %s        %s        %f\n' % (colName[i], rowName[i], val[i,n]))
+
+f.write('ENDATA')            
+f.close()
