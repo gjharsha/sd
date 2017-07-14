@@ -358,8 +358,7 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 		}
 
 		/* 4. Enter Feasibility Mode */
-		if (prob->subprob->feaflag == FALSE)
-		{
+		if (prob->subprob->feaflag == FALSE) {
 			resolve_infeasibility(sd_global, cell, prob, soln, omeg_idx,
 					new_omega, phi);
 		}
