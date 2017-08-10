@@ -745,7 +745,7 @@ int load_stoch(sdglobal_type* sd_global, one_problem *original, identity *ident,
     int high_block_cnt;
     int low_block_cnt;
     int low_block_omega_cnt;
-    fpos_t file_postition = 0;
+    fpos_t file_postition;
     int status = 123;
 
 	/* modified by Yifan 2013.05.20 */
