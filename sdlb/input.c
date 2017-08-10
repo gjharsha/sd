@@ -1651,7 +1651,7 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 		sd_global->config.EVAL_SEED1 = -1;
 	}
 
-	f_in = fopen("config.sd", "r");
+	f_in = fopen("./instance/config.sd", "r");
 
 	if (f_in == NULL)
 	{
