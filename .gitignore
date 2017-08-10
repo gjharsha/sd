@@ -8,3 +8,7 @@ DerivedData
 
 #object files
 *.o
+/Debug/
+/.cproject
+/.project
+/orig.lp
