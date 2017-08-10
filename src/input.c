@@ -1559,8 +1559,7 @@ int load_time(sd_small *row_num, sd_small *col_num, identity *ident, char *fname
 				else
 				{
 					printf("unidentified row name in time file\n");
-					printf(
-							"Randomness in Cost Coefficients and W metrix will be supported in later release\n");
+					printf("Randomness in Cost Coefficients and W metrix will be supported in later release\n");
 					/*added by Yifan Oct 12 2011*/
 					fclose(time);
 					return 0;
@@ -1575,8 +1574,7 @@ int load_time(sd_small *row_num, sd_small *col_num, identity *ident, char *fname
 				else
 				{
 					printf("unidentified col name in time file\n");
-					printf(
-							"Randomness in Cost Coefficients and W metrix will be supported in later release\n");
+					printf("Randomness in Cost Coefficients and W metrix will be supported in later release\n");
 					/*added by Yifan Oct 12 2011*/
 					fclose(time);
 					return 0;
