@@ -119,6 +119,8 @@ typedef struct
 	int PRINT_CYCLE;
 	int EVAL_RUN_FLAG;
 	int DROP_TIME;
+    int MODEL_FORMAT;
+    int BOOTSTRAP_TEST;
 	sd_long RUN_SEED;
 	sd_long RUN_SEED1;
 	sd_long RUN_SEED2;
@@ -156,7 +158,6 @@ typedef struct
 	int TEST_TYPE;
 	int PI_EVAL_START;
 	int PI_CYCLE;
-    int MAX_SCAN_LEN;
 	int SCAN_LEN;
 	int DETAILED_SOLN;
 	int MULTIPLE_REP;

@@ -669,7 +669,7 @@ double calc_pi_var(sdglobal_type* sd_global, double *x, int start, int length)
 	for (count = 1; count < length; count++)
 	{
 		temp = mean;
-		mean = mean + (x[(start + count) % sd_global->config.MAX_SCAN_LEN] - mean) / (double) (count + 1);
+		mean = mean + (x[(start + count) % sd_global->config.SCAN_LEN] - mean) / (double) (count + 1);
 		vari = (1 - 1 / (double) count) * vari
         + (count + 1) * (mean - temp) * (mean - temp);
 	}

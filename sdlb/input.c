@@ -1582,67 +1582,68 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 
 	sum = 0;
 
-    /* Establish default settings for all parameters */
-    sd_global->config.EPSILON      = 0.001;
-    sd_global->config.SCAN_LEN     = 256;
-    sd_global->config.MAX_SCAN_LEN = 512;
-    
-    sd_global->config.MULTIPLE_REP = 0;
-    
-    sd_global->config.PRINT_CYCLE  = 100;
-    sd_global->config.EVAL_RUN_FLAG = 0;
-    sd_global->config.EVAL_FLAG    = 0;         	/* JH 3/20/98 */
-    sd_global->config.EVAL_ERROR   = 0.01;      	/* JH 3/20/98 */
-    sd_global->config.MEAN_DEV     = 0.05;
-    
-    sd_global->config.OVERRIDE     = 0;
-    
-    sd_global->config.MASTER_TYPE  = 1;        /* 1 in config for QP master */
-    sd_global->config.LB_TYPE      = 1;
-    
-    sd_global->config.R            = 0.2;
-    sd_global->config.R2           = 0.95;       	/* zl 06/04/02 */
-    sd_global->config.R3           = 2.0;       	/* zl 06/04/02 */
-    
-    sd_global->config.MIN_QUAD_SCALAR = 0.001; /*Yifan 03/27*/
-    sd_global->config.MAX_QUAD_SCALAR = 10000.0; 	/* zl 06/20/02 */
-    
-    sd_global->config.TAU          = 2;
-    
-    sd_global->config.PRE_EPSILON  = 0.01;     	/* for pre_tests. zl */
-    sd_global->config.ITER_FACT    = 0;       	/* JH 3/13/98 */
-    sd_global->config.PERCENT_PASS = 0.95;
-    sd_global->config.M            = 50;         	/* zl trial. */
-    sd_global->config.CUT_MULT     = 5;
-    
-    
-    sd_global->config.CONFID_HI    = 1.0;
-    sd_global->config.CONFID_LO    = 1.45;
-    sd_global->config.TOLERANCE    = 0.001;
-    sd_global->config.FEA_TOLER    = 0.05;
-    sd_global->config.THIN_TOLER   = 0.001;
-    sd_global->config.START_THIN   = 9001;
-    sd_global->config.THIN_CYCLE   = 200;
-    sd_global->config.DROP_TIME    = 16300;
-    sd_global->config.TEST_TYPE    = 1;        /* 1 in config for full test */
-    /* 0 in config for LP master */
-    
-    sd_global->config.PI_EVAL_START = 1;
-    sd_global->config.DETAILED_SOLN = 1;
-    sd_global->config.PI_CYCLE      = 1;
-    sd_global->config.SUB_LB_CHECK  = 0;			/* Subprob LB check. 0 for no check.
+	/* Establish default settings for all parameters */
+	sd_global->config.EPSILON      = 0.001;
+	sd_global->config.SCAN_LEN     = 256;
+
+	sd_global->config.MULTIPLE_REP = 0;
+
+	sd_global->config.PRINT_CYCLE  = 100;
+	sd_global->config.EVAL_RUN_FLAG = 0;
+	sd_global->config.EVAL_FLAG    = 0;         	/* JH 3/20/98 */
+	sd_global->config.EVAL_ERROR   = 0.01;      	/* JH 3/20/98 */
+	sd_global->config.MEAN_DEV     = 0.05;
+
+	sd_global->config.OVERRIDE     = 0;
+
+	sd_global->config.MASTER_TYPE  = 1;        /* 1 in config for QP master */
+	sd_global->config.LB_TYPE      = 1;
+
+	sd_global->config.R            = 0.2;
+	sd_global->config.R2           = 0.95;       	/* zl 06/04/02 */
+	sd_global->config.R3           = 2.0;       	/* zl 06/04/02 */
+
+	sd_global->config.MIN_QUAD_SCALAR = 0.001; /*Yifan 03/27*/
+	sd_global->config.MAX_QUAD_SCALAR = 10000.0; 	/* zl 06/20/02 */
+
+	sd_global->config.TAU          = 2;
+
+	sd_global->config.PRE_EPSILON  = 0.01;     	/* for pre_tests. zl */
+	sd_global->config.ITER_FACT    = 0;       	/* JH 3/13/98 */
+	sd_global->config.PERCENT_PASS = 0.95;
+	sd_global->config.M            = 50;         	/* zl trial. */
+	sd_global->config.CUT_MULT     = 5;
+
+
+	sd_global->config.CONFID_HI    = 1.0;
+	sd_global->config.CONFID_LO    = 1.45;
+	sd_global->config.TOLERANCE    = 0.001;
+	sd_global->config.FEA_TOLER    = 0.05;
+	sd_global->config.THIN_TOLER   = 0.001;
+	sd_global->config.START_THIN   = 9001;
+	sd_global->config.THIN_CYCLE   = 200;
+	sd_global->config.DROP_TIME    = 16300;
+	sd_global->config.MODEL_FORMAT = 0; /* zero for MPS, one for LP */
+	sd_global->config.BOOTSTRAP_TEST = 1;  // by default, this test is enabled.
+	sd_global->config.TEST_TYPE    = 1;        /* 1 in config for full test */
+	/* 0 in config for LP master */
+
+	sd_global->config.PI_EVAL_START = 1;
+	sd_global->config.DETAILED_SOLN = 1;
+	sd_global->config.PI_CYCLE      = 1;
+	sd_global->config.SUB_LB_CHECK  = 0;			/* Subprob LB check. 0 for no check.
                                        zl 09/20/05 */
-    sd_global->config.AUTO_SEED     = 0;
-    
-    sd_global->config.SMOOTH_I     = 50;
-    sd_global->config.SMOOTH_PARM  = 0.25;
-    sd_global->config.SUBPROB_LB   = 0.0;		/* LB on subprob obj values,
+	sd_global->config.AUTO_SEED     = 0;
+
+	sd_global->config.SMOOTH_I     = 50;
+	sd_global->config.SMOOTH_PARM  = 0.25;
+	sd_global->config.SUBPROB_LB   = 0.0;		/* LB on subprob obj values,
                                        zl 07/01/04. */
-    if (read_iters)                  	/* added by zl. 06/18/02. */
-    {
-      sd_global->config.MIN_ITER     = 0;
-      sd_global->config.MAX_ITER     = 5000;
-    }
+	if (read_iters)                  	/* added by zl. 06/18/02. */
+	{
+		sd_global->config.MIN_ITER     = 0;
+		sd_global->config.MAX_ITER     = 5000;
+	}
 
 	if (read_seeds)
 	{
@@ -1728,8 +1729,8 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 				}
 				else
 					status = fscanf(f_in, "%d", &int_dummy);
-            else if (!strcmp(param, "OVERRIDE"))
-                status = fscanf(f_in, "%d", &(sd_global->config.OVERRIDE));
+			else if (!strcmp(param, "OVERRIDE"))
+				status = fscanf(f_in, "%d", &(sd_global->config.OVERRIDE));
 			else if (!strcmp(param, "START_THIN"))
 				status = fscanf(f_in, "%d", &(sd_global->config.START_THIN));
 			else if (!strcmp(param, "THIN_CYCLE"))
@@ -1740,6 +1741,10 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 				status = fscanf(f_in, "%d", &(sd_global->config.EVAL_RUN_FLAG));
 			else if (!strcmp(param, "DROP_TIME"))
 				status = fscanf(f_in, "%d", &(sd_global->config.DROP_TIME));
+			else if (!strcmp(param, "MODEL_FORMAT"))
+				status = fscanf(f_in, "%d", &(sd_global->config.MODEL_FORMAT));
+			else if (!strcmp(param, "BOOTSTRAP_TEST"))
+				status = fscanf(f_in, "%d", &(sd_global->config.BOOTSTRAP_TEST));
 			else if (!strcmp(param, "RUN_SEED1"))
 				if (read_seeds)
 					status = fscanf(f_in, "%lld", &(sd_global->config.RUN_SEED1));
@@ -1901,8 +1906,6 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 				status = fscanf(f_in, "%d", &(sd_global->config.PI_EVAL_START));
 			else if (!strcmp(param, "PI_CYCLE"))
 				status = fscanf(f_in, "%d", &(sd_global->config.PI_CYCLE));
-            else if (!strcmp(param, "MAX_SCAN_LEN"))
-				status = fscanf(f_in, "%d", &(sd_global->config.MAX_SCAN_LEN));
 			else if (!strcmp(param, "SCAN_LEN"))
 				status = fscanf(f_in, "%d", &(sd_global->config.SCAN_LEN));
 			else if (!strcmp(param, "DETAILED_SOLN"))
@@ -1913,18 +1916,18 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 				status = fscanf(f_in, "%d", &(sd_global->config.AUTO_SEED));
 			else if (!strcmp(param, "//"))
 			{
-              if (fgets(comment, 80, f_in) != NULL) {
-                 sum--;
-              }              
+				if (fgets(comment, 80, f_in) != NULL) {
+					sum--;
+				}
 			}
 			else
 			{
 				printf("Unrecognized configuration parameter: %s.\n", param);
 				return 0;
 			}
-            if (status < 0) {
-              printf("Error with config file, no parameter value");
-            }
+			if (status < 0) {
+				printf("Error with config file, no parameter value");
+			}
 			sum++;
 		}
 
@@ -1941,9 +1944,6 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 
 		fclose(f_in);
 	}
-    
-    /* For non-resume version of the code, make sure MAX_SCAN_LEN = SCAN_LEN */
-    // sd_global->config.MAX_SCAN_LEN = sd_global->config.SCAN_LEN;
 
 	if (sd_global->config.RUN_SEED1 < 0 || sd_global->config.RUN_SEED2 < 0
 			|| sd_global->config.EVAL_SEED1 < 0)
@@ -1951,10 +1951,10 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters)
 		printf("Random number seeds not specified in config.sd.\n");
 		printf("Please enter run seeds 1 and 2, evaluation seed 1: ");
 		status = scanf("%lld %lld %lld", &(sd_global->config.RUN_SEED1), &(sd_global->config.RUN_SEED2), &(sd_global->config.EVAL_SEED1));
-        if (status) {
-          printf("Error reading seed from config file.");
-          exit(1);
-        }
+		if (status) {
+			printf("Error reading seed from config file.");
+			exit(1);
+		}
 	}
 	return 1;
 }
@@ -1975,7 +1975,7 @@ int get_file(FILE **fptr, char *fname, char *extension, char *probname)
 {
 	char file_name[STRSIZE], *p, *q;
 
-	strcpy(file_name, "./sdinput/");
+	strcpy(file_name, "./instance/sdinput/");
 	strcat(file_name, fname);
 	strcat(file_name, "/");
 	strcat(file_name, fname);
@@ -2131,7 +2131,7 @@ int load_core_cpx(one_problem **original, identity **ident, char *fname,
 	/* read COR file from input folder modified by Yifan 2013.05.20 */
 	/* the folder structure looks like this ./sdinput/prob_name/prob_name.cor */
 
-	strcpy(name, "./sdinput/");
+	strcpy(name, "./instance/sdinput/");
 	strcat(name, fname);
 	strcat(name, "/");
 	strcat(name, fname);

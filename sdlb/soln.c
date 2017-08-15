@@ -163,11 +163,11 @@ soln_type * new_soln(sdglobal_type* sd_global, prob_type *p, vector x_k)
 
 	if (!(s->dual_statble_flag = (BOOL *) mem_malloc (sizeof(BOOL))))
 		err_msg("Allocation", "BOOL_type", "s->dual_statble_flag");
-	if (!(s->pi_ratio = arr_alloc (sd_global->config.MAX_SCAN_LEN, double)))
+	if (!(s->pi_ratio = arr_alloc (sd_global->config.SCAN_LEN, double)))
 		err_msg("Allocation", "double_type", "s->pi_ratio");
 
 	/*added by Yifan, 09/29/2011*/
-	for (i = 0; i < sd_global->config.MAX_SCAN_LEN; i++)
+	for (i = 0; i < sd_global->config.SCAN_LEN; i++)
 		s->pi_ratio[i] = 0;
 
 	s->run_time->total_time = 0.0;

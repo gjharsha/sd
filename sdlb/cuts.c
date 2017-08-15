@@ -698,16 +698,16 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 
 	if (pi_eval_flag == TRUE)
 	{
-		pi_ratio[(num_samples-1) % sd_global->config.MAX_SCAN_LEN] = argmax_dif_sum
+		pi_ratio[(num_samples-1) % sd_global->config.SCAN_LEN] = argmax_dif_sum
 				/ argmax_all_sum;
         
         for ( cnt = 0; cnt < 3; cnt++) {
-            start_position = 0; /* if SCAN_LEN < MAX_SCAN_LEN, need start_position to calculate variance of pi_ratio*/
+            start_position = 0; /* if SCAN_LEN < SCAN_LEN, need start_position to calculate variance of pi_ratio*/
             if (scan_len[cnt] <= sd_global->config.SCAN_LEN && !(sd_global-> pi_flag[cnt])) {
                 if (num_samples - sd_global->config.PI_EVAL_START + 1  >= scan_len[cnt]){
-                    start_position = num_samples % sd_global->config.MAX_SCAN_LEN - scan_len[cnt] ;
+                    start_position = num_samples % sd_global->config.SCAN_LEN - scan_len[cnt] ;
                     if (start_position < 0) {
-                        start_position = start_position + sd_global->config.MAX_SCAN_LEN;
+                        start_position = start_position + sd_global->config.SCAN_LEN;
                     }
                     vari = calc_pi_var(sd_global, pi_ratio, start_position, scan_len[cnt]);
                 }
@@ -727,9 +727,9 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
         if (!(*dual_statble_flag)) {
             start_position = 0;
             if (num_samples - sd_global->config.PI_EVAL_START + 1  >= sd_global->config.SCAN_LEN){
-                start_position = num_samples % sd_global->config.MAX_SCAN_LEN - sd_global->config.SCAN_LEN ;
+                start_position = num_samples % sd_global->config.SCAN_LEN - sd_global->config.SCAN_LEN ;
                 if (start_position < 0) {
-                    start_position = start_position + sd_global->config.MAX_SCAN_LEN;
+                    start_position = start_position + sd_global->config.SCAN_LEN;
                 }
                 /*added by Yifan return vari*/
                 // vari = calc_var(sd_global, &(pi_ratio[start_position]), NULL, NULL, 0);
@@ -753,7 +753,7 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 		fptr = fopen("pi_ratio.log", "a");
 		fprintf(fptr, "c->k=%d, %d:%f, soln->hoeff_prob:%.9f, soln->norm_d_k: %.9f, soln->candid_est: %.9f, soln->incumb_est: %.9f\n",
 				num_samples, num_samples % sd_global->config.SCAN_LEN,
-				pi_ratio[(num_samples-1) % sd_global->config.MAX_SCAN_LEN],
+				pi_ratio[(num_samples-1) % sd_global->config.SCAN_LEN],
 				soln->hoeff_prob,soln->norm_d_k, soln->candid_est, soln->incumb_est);
 		fclose(fptr);
 	}

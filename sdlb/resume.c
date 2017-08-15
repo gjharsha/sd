@@ -244,7 +244,7 @@ int store_sd_data(sdglobal_type* sd_global, prob_type *p, cell_type *c, soln_typ
     fprintf(rep_data, "%.17g\n", s->max_ratio);
     fprintf(rep_data, "%.17g\n", s->min_ratio);
     fprintf(rep_data, "9-1. Start storing s->pi_ratio\n");
-    for (idx = 0; idx < sd_global->config.MAX_SCAN_LEN; idx++) {
+    for (idx = 0; idx < sd_global->config.SCAN_LEN; idx++) {
         fprintf(rep_data, "%.17g\n", s->pi_ratio[idx]);
     }
 
@@ -500,7 +500,7 @@ int restore_sd_data(sdglobal_type* sd_global, prob_type *p, cell_type *c, soln_t
     fscanf(rep_data, "%lg\n", &s->sub_lb_checker);
     fscanf(rep_data, "%lg\n", &s->max_ratio);
     fscanf(rep_data, "%lg\n", &s->min_ratio);
-    for (idx = 0; idx < sd_global->config.MAX_SCAN_LEN; idx++) {
+    for (idx = 0; idx < sd_global->config.SCAN_LEN; idx++) {
         fscanf(rep_data, "%lg\n", &s->pi_ratio[idx]);
     }
     

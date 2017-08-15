@@ -242,7 +242,7 @@ int store_sd_data_b(sdglobal_type* sd_global, prob_type *p, cell_type *c, soln_t
     fwrite(&(s->max_ratio), sizeof(double), 1, rep_data);
     fwrite(&(s->min_ratio), sizeof(double), 1, rep_data);
 
-    fwrite(s->pi_ratio, sizeof(double), sd_global->config.MAX_SCAN_LEN, rep_data);
+    fwrite(s->pi_ratio, sizeof(double), sd_global->config.SCAN_LEN, rep_data);
     
     
     /* 10. Start storing the last seed used in getting observation */
@@ -761,7 +761,7 @@ int restore_sd_data_b(sdglobal_type* sd_global, prob_type *p, cell_type *c, soln
         printf("Failed to read s->min_ratio");
     }
     
-    if (fread(s->pi_ratio, sizeof(double), sd_global->config.MAX_SCAN_LEN, rep_data) != sd_global->config.MAX_SCAN_LEN) {
+    if (fread(s->pi_ratio, sizeof(double), sd_global->config.SCAN_LEN, rep_data) != sd_global->config.SCAN_LEN) {
         printf("Failed to read s->pi_ratio");
     }
     
