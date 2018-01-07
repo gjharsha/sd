@@ -536,12 +536,14 @@ void free_id(id_type *index)
 
 void free_rcdata(rc_type *rc_data)
 {
-    mem_free(rc_data->col_num);
-    mem_free(rc_data->phi_col_num);
-    mem_free(rc_data->lhs_col_num);
-    mem_free(rc_data->phi_col);
-    mem_free(rc_data->lhs_chl);
-    mem_free(rc_data);
+	if ( rc_data) {
+		if (rc_data->col_num) mem_free(rc_data->col_num);
+		if (rc_data->phi_col_num) mem_free(rc_data->phi_col_num);
+		if (rc_data->lhs_col_num) mem_free(rc_data->lhs_col_num);
+		if (rc_data->phi_col) mem_free(rc_data->phi_col);
+		if (rc_data->lhs_chl) mem_free(rc_data->lhs_chl);
+		mem_free(rc_data);
+	}
 }
 
 /*  */

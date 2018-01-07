@@ -1,5 +1,5 @@
 /***********************************************************************\
-**
+ **
  ** solver.c
  **
  ** This file contains all the routines necessary to solve LP's.
@@ -44,7 +44,7 @@
 
 
 /***********************************************************************\
-** Release the CPLEX environment.
+ ** Release the CPLEX environment.
  \***********************************************************************/
 void close_Solver(void)
 {
@@ -77,7 +77,7 @@ void close_Solver(void)
 }
 
 /***********************************************************************\
-** Initialize the CPLEX environment. zl
+ ** Initialize the CPLEX environment. zl
  \***********************************************************************/
 void open_Solver(void)
 {
@@ -122,14 +122,14 @@ void open_Solver(void)
 	 "Failed to require variable (column) memory growth, error %d.\n", status);
 	 goto TERMINATE;
 	 }
-	 
+
 	 status = CPXsetintparam (env, CPX_PARAM_ROWGROWTH, sd_global->config.MAX_ITER);
 	 if (status) {
 	 fprintf (stderr, 
 	 "Failure to require constraint (row) memory growth, error %d.\n", status);
 	 goto TERMINATE;
 	 }
-	 
+
 	 status = CPXsetintparam (env, CPX_PARAM_NZGROWTH, 100*sd_global->config.MAX_ITER);
 	 if (status) {
 	 fprintf (stderr, 
@@ -231,198 +231,123 @@ BOOL setup_problem(one_problem *current)
  \***********************************************************************/
 void *read_problem(one_problem *p, char *filename, char *filetype)
 {
-  /* changed from _void * lp_ to _CPXLPptr lp_ Yifan 11/08/2011 */
-  CPXLPptr lp;
-  int status;
-  
-  //printf("the filename is : %s\n", filename);
-  lp = CPXcreateprob(env, &status, p->name);
-  
-  if (lp == NULL)
-  {
-    printf(" read_problem: original wasn't created! \n");
-    return lp;
-  }
-  
-  /* the pointer in the second argument is changed from _p->lp_ to _lp_ Yifan 11/08/2011 */
-  status = CPXreadcopyprob(env, lp, filename, filetype);
-  
-  if (status != 0)
-  {
-    printf(" read_problem: read MPS file failed \n");
-    CPXfreeprob(env, &lp);
-    lp = NULL;
-  }
-  
-  return lp;
+	/* changed from _void * lp_ to _CPXLPptr lp_ Yifan 11/08/2011 */
+	CPXLPptr lp;
+	int status;
+
+	//printf("the filename is : %s\n", filename);
+	lp = CPXcreateprob(env, &status, p->name);
+
+	if (lp == NULL)
+	{
+		printf(" read_problem: original wasn't created! \n");
+		return lp;
+	}
+
+	/* the pointer in the second argument is changed from _p->lp_ to _lp_ Yifan 11/08/2011 */
+	status = CPXreadcopyprob(env, lp, filename, filetype);
+
+	if (status != 0)
+	{
+		printf(" read_problem: read MPS file failed \n");
+		CPXfreeprob(env, &lp);
+		lp = NULL;
+	}
+
+	return lp;
 }
 
 /***********************************************************************\
  ** Tell the external Solver to just read data into the
  ** problem pointed by p->lp from an MPS file.
  \***********************************************************************/
-void read_problem_simple(one_problem *p, char *filename, char *filetype)
-{
-    int status;
-    
-    printf("the filename is : %s\n", filename);
-    
-    /* the pointer in the second argument is changed from _p->lp_ to _lp_ Yifan 11/08/2011 */
-    status = CPXreadcopyprob(env, p->lp, filename, filetype);
-    
-    if (status != 0)
-    {
-        printf(" read_problem: read MPS file failed \n");
-    }
+void read_problem_simple(one_problem *p, char *filename, char *filetype) {
+	int status;
+
+	printf("the filename is : %s\n", filename);
+
+	/* the pointer in the second argument is changed from _p->lp_ to _lp_ Yifan 11/08/2011 */
+	status = CPXreadcopyprob(env, p->lp, filename, filetype);
+
+	if (status != 0)
+	{
+		printf(" read_problem: read MPS file failed \n");
+	}
 }
 /***********************************************************************\
-** Tell CPLEX to write out an MPS file for the LP problem,
+ ** Tell CPLEX to write out an MPS file for the LP problem,
  ** using the filename provided.  It returns whatever CPLEX returns.
  \***********************************************************************/
-BOOL print_problem(one_problem *p, char *filename)
-{
+BOOL print_problem(one_problem *p, char *filename) {
 	int status;
-#ifdef TRACE
-	printf("Inside print_problem\n");
-#endif
 
 	status = CPXwriteprob(env, p->lp, filename, "LP");
-
-#ifdef TRACE
-	printf("Exiting print_problem\n");
-#endif
-	/*  return mpswrite(p->lp, filename);  modified. zl */
 	return status;
-
-	/* return CPXwriteprob(env, p->lp, filename, "LP"); zl */
-
 }
 
 /***********************************************************************\
-** This function solves the given LP problem by calling on the
+ ** This function solves the given LP problem by calling on the
  ** optimizer.  If the optimizer was unable to solve the problem,
  ** it returns FALSE; otherwise TRUE.  Note that no answers are
  ** provided, but must be called for with a separate function.
  \***********************************************************************/
 #undef PRINT_X
-BOOL solve_problem(sdglobal_type* sd_global, one_problem *p)
-{
+BOOL solve_problem(sdglobal_type* sd_global, one_problem *p) {
 	int status;
 	BOOL ans;
 	int qpnzlim;
 	int ctr = 0, ctr2 = 0;
-
-#ifdef PRINT_X
-	int i, stat1;
-	vector x;
-#endif
 	int param = 1;
-#ifdef TRACE
-	printf("Inside solve_problem\n");
-#endif
 
-#ifdef SAVE
-	print_problem(p, "solve.mps");
-#endif
-
-#ifdef PRINT_X
-	x = (double *) malloc (p->mac+1 * sizeof(double));
-	if (!(x))
-	{
-		printf("ERROR: out of memory, solve_prob\n");
-		exit(1);
-	}
-#endif
-
-	/*status = CPXsetdblparam (env, CPX_PARAM_TILIM, 30000.0);*/
-	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-
-	/* Modified for the regularized QP method (LP=0, QP=1). zl */
-	//printf("p->name is: %s \n",p->name);
-	if ((strcmp(p->name, "Subproblem") == 0))
-	{
-		/*turn_off_presolve: if(p->feaflag == FALSE && pre_solve == TRUE) {pre_stat = CPXsetintparam (env, CPX_PARAM_PREIND, CPX_OFF); pre_solve = FALSE;}*/
+	if ((strcmp(p->name, "Subproblem") == 0)) {
 		change_solver_primal(p);
-        
+		CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
 		CPXsetintparam(env, CPX_PARAM_PREIND, CPX_OFF);
 		ans = !CPXlpopt(env, p->lp);
 		CPXsetintparam(env, CPX_PARAM_PREIND, CPX_ON);
 	}
-	else if (sd_global->config.MASTER_TYPE == 0)
-	{
+	else if (sd_global->config.MASTER_TYPE == 0) {
 		ans = !CPXprimopt(env, p->lp);
 	}
-	else
-	{
-        // CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
-        // CPXsetintparam(env, CPX_PARAM_BARDISPLAY, 1);
+	else {
+		CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
+
 		resolve_master: ans = !CPXbaropt(env, p->lp);
 		/* Set it back to default */
 		CPXsetintparam(env, CPX_PARAM_SCAIND, 0);
-        change_barrier_algorithm(p, 0); /* Change Barrier Algorithm to its default setting*/
+		change_barrier_algorithm(p, 0); /* Change Barrier Algorithm to its default setting*/
 	}
 
-	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
+	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
 	CPXsolution(env, p->lp, &status, NULL, NULL, NULL, NULL, NULL);
 	/*Notice!! Won't work with CPXprimopt   added by Yifan 09/13/2011*/
 
 	/* Error messages for checking purpose. added by zl. */
 	/* Change from cplex70 to cplex81. zl 04/13/05. */
 	/* if (status != CPX_STAT_OPTIMAL) */
-	if (status != CPX_STAT_OPTIMAL)
-	{
-		if (strcmp(p->name, "Subproblem") == 0)
-		{ //printf("\nSubproblem non-optimal. ");
-		  //printf("Please check complete recourse condition. \n");
-		  //printf("CPLEX solution status = %d in solve_problem for %s.\n", 
-		  //       status, p->name);
-			if (status == CPX_STAT_INFEASIBLE)
-			{
-				p->feaflag = FALSE; /*added by Yifan to generate feasibility cut 08/11/2011*/
-				/*if (pre_solve == TRUE) {
-				 goto turn_off_presolve;
-				 }*/
+	if (status != CPX_STAT_OPTIMAL) {
+		if (strcmp(p->name, "Subproblem") == 0) {
+			if (status == CPX_STAT_INFEASIBLE) {
+				p->feaflag = FALSE;
 				printf("*****   SUB PROBLEM INFEASIBLE   *****\n");
 				return 1; //modified by Yifan to test infeasibility of sub-prob
 			}
-			else
-			{
+			else {
 				printf("*****   SUB PROBLEM NO SOLUTION   *****\n");
 				return 1;
 			}
-
-#ifdef PRINT_X  
-			get_primal(x, p, p->mac);
-			printf("X :: ");
-			for (i=0; i<p->mac; i++)
-			printf("%s = %f ", p->cname[i], x[i+1]);
-			printf("\n");
-			print_contents(p, "solve_err.out");
-			print_problem(p, "solve_error.mps");
-#endif
-
 		}
-		else
-		{
-			/* Change from cplex70 to cplex81. zl 04/13/05. */
-			/* if (status != CPX_STAT_INFEASIBLE) { */
-			if (status != CPX_STAT_INFEASIBLE)
-			{
-				/*printf("CPLEX solution status = %d in solve_problem for %s.\n", status, p->name);*/
-				if (status == 6)
-				{
-					/* Included for aggresive scaling by GJH 04/19/11*/
-					/* Yifan 03/25/2012 Solution Status 6 encountered. Change to Equilibration Scaling*/
+		else {
+			if (status != CPX_STAT_INFEASIBLE) {
+				if (status == 6) {
 					printf("-");
 					ctr++;
 					param = -param;
 					CPXsetintparam(env, CPX_PARAM_SCAIND, param);
-					CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
+
 					/* Set 0 if you want to change algorithm immediately after status 6 */
 					/* Set 2 if you want to change scaling strategy twice */
-					if (ctr > 2)
-					{
-						/*err_msg("Change to another SEED", "solve_problem", "ill_conditioned problem");*/
+					if (ctr > 2) {
 						change_barrier_algorithm(p, 2); /* Change Barrier Algorithm to Infeasibility-constant start*/
 					}
 					goto resolve_master;
@@ -436,45 +361,25 @@ BOOL solve_problem(sdglobal_type* sd_global, one_problem *p)
 					exit(1);
 				}
 			}
-			else
-			{   ctr2++;
-                if (ctr2 < 2) {
-                    /* added by Yifan 2013.10.31 Aggressive Scalaing might help solve some 
+			else{
+				ctr2++;
+				if (ctr2 < 2) {
+					/* added by Yifan 2013.10.31 Aggressive Scalaing might help solve some
                      seemingly large scale "infeasible master" */
-                    CPXsetintparam(env, CPX_PARAM_SCAIND, -1);
-                    goto resolve_master;
-                }
+					CPXsetintparam(env, CPX_PARAM_SCAIND, -1);
+					goto resolve_master;
+				}
 
-                
+
 				printf("\nMaster problem infeasible. \n");
 				print_problem(p, "Infeasible_Master");
 				printf("CPLEX solution status = %d in solve_problem for %s.\n",
 						status, p->name);
 				printf("Please check the problem data files.\n");
-                
-#ifdef PRINT_X  
-				get_primal(x, p, p->mac);
-				printf("X :: ");
-				for (i=0; i<p->mac; i++)
-				printf("%s = %f ", p->cname[i], x[i+1]);
-				printf("\n");
-				print_contents(p, "solve_err.out");
-				print_problem(p, "solve_error.mps");
-#endif
 				exit(1);
 			}
 		}
 	}
-
-#ifdef PRINT_X
-	if (x)
-	free(x);
-#endif
-
-#ifdef TRACE
-	printf("Exiting solve_problem\n");
-#endif
-
 	return ans;
 }
 
@@ -487,29 +392,29 @@ BOOL solve_problem(sdglobal_type* sd_global, one_problem *p)
  \***********************************************************************/
 void remove_problem(one_problem *p)
 {
-  
-  int status;
+
+	int status;
 #ifdef TRACE
-  printf("Inside remove_problem\n");
+	printf("Inside remove_problem\n");
 #endif
-  
-  /* modified.  zl
+
+	/* modified.  zl
    unloadprob(&p->lp);
-   */
-  
-  /* Free up the LP problem, if necessary. */
-  
-  if (p->lp != NULL)
-  {
-    status = CPXfreeprob(env, (CPXLPptr *) &(p->lp));
-    if (status)
-    {
-      fprintf(stderr, "CPXfreeprob failed, error code %d.\n", status);
-    }
-  }
-  
+	 */
+
+	/* Free up the LP problem, if necessary. */
+
+	if (p->lp != NULL)
+	{
+		status = CPXfreeprob(env, (CPXLPptr *) &(p->lp));
+		if (status)
+		{
+			fprintf(stderr, "CPXfreeprob failed, error code %d.\n", status);
+		}
+	}
+
 #ifdef TRACE
-  printf("Exiting remove_problem\n");
+	printf("Exiting remove_problem\n");
 #endif
 }
 
@@ -518,7 +423,7 @@ void remove_problem(one_problem *p)
  \**********************************************************************************/
 int get_numcols(one_problem *p)
 {
-  return CPXgetnumcols(env, p->lp);
+	return CPXgetnumcols(env, p->lp);
 }
 
 /**********************************************************************************\
@@ -526,7 +431,7 @@ int get_numcols(one_problem *p)
  \**********************************************************************************/
 int get_numrows(one_problem *p)
 {
-  return CPXgetnumrows(env, p->lp);
+	return CPXgetnumrows(env, p->lp);
 }
 
 /**********************************************************************************\
@@ -534,12 +439,12 @@ int get_numrows(one_problem *p)
  \**********************************************************************************/
 int get_numnz(one_problem *p)
 {
-  return CPXgetnumnz(env, p->lp);
+	return CPXgetnumnz(env, p->lp);
 }
 
 
 /***********************************************************************\
-** This function retreives and returns the value of the objective function 
+ ** This function retreives and returns the value of the objective function
  ** for a given problem.  It assumes the problem has already been solved!
  \***********************************************************************/
 double get_objective(one_problem *p)
@@ -572,7 +477,7 @@ double get_objective(one_problem *p)
  \**********************************************************************************/
 int get_obj(one_problem *p, double *obj, int begin, int end)
 {
-  return CPXgetobj(env, p->lp, obj, begin, end);
+	return CPXgetobj(env, p->lp, obj, begin, end);
 }
 
 /**********************************************************************************\
@@ -580,10 +485,10 @@ int get_obj(one_problem *p, double *obj, int begin, int end)
  ** the argument problem, in the arrays cmatbeg, cmatind, cmatval.
  \**********************************************************************************/
 int get_cols(one_problem *p, int *pnzcnt, int *cmatbeg, int *cmatind,
-             double *cmatval, int cmatspace, int *psurplus, int begin, int end)
+		double *cmatval, int cmatspace, int *psurplus, int begin, int end)
 {
-  return CPXgetcols(env, p->lp, pnzcnt, cmatbeg, cmatind, cmatval, cmatspace,
-                    psurplus, begin, end);
+	return CPXgetcols(env, p->lp, pnzcnt, cmatbeg, cmatind, cmatval, cmatspace,
+			psurplus, begin, end);
 }
 
 /**********************************************************************************\
@@ -591,10 +496,10 @@ int get_cols(one_problem *p, int *pnzcnt, int *cmatbeg, int *cmatind,
  ** the argument problem, in the arrays rmatbeg, rmatind, rmatval.
  \**********************************************************************************/
 int get_rows(one_problem *p, int *pnzcnt, int *rmatbeg, int *rmatind,
-             double *rmatval, int rmatspace, int *psurplus, int begin, int end)
+		double *rmatval, int rmatspace, int *psurplus, int begin, int end)
 {
-  return CPXgetrows(env, p->lp, pnzcnt, rmatbeg, rmatind, rmatval, rmatspace,
-                    psurplus, begin, end);
+	return CPXgetrows(env, p->lp, pnzcnt, rmatbeg, rmatind, rmatval, rmatspace,
+			psurplus, begin, end);
 }
 
 
@@ -604,7 +509,7 @@ int get_rows(one_problem *p, int *pnzcnt, int *rmatbeg, int *rmatind,
  \**********************************************************************************/
 int get_rhs(one_problem *p, double *rhsx, int begin, int end)
 {
-  return CPXgetrhs(env, p->lp, rhsx, begin, end);
+	return CPXgetrhs(env, p->lp, rhsx, begin, end);
 }
 
 /**********************************************************************************\
@@ -613,7 +518,7 @@ int get_rhs(one_problem *p, double *rhsx, int begin, int end)
  \**********************************************************************************/
 int get_sense(one_problem *p, char *senx, int begin, int end)
 {
-  return CPXgetsense(env, p->lp, senx, begin, end);
+	return CPXgetsense(env, p->lp, senx, begin, end);
 }
 
 /**********************************************************************************\
@@ -622,12 +527,12 @@ int get_sense(one_problem *p, char *senx, int begin, int end)
  \**********************************************************************************/
 int get_basis(one_problem *p, int *cstat, int *rstat)
 {
-    int status = 0;
-    status = CPXgetbase(env, p->lp, cstat, rstat);
-    if (status) {
-        printf("Error Code: %d from get_basis()\n", status);
-    }
-    return status;
+	int status = 0;
+	status = CPXgetbase(env, p->lp, cstat, rstat);
+	if (status) {
+		printf("Error Code: %d from get_basis()\n", status);
+	}
+	return status;
 }
 
 /**********************************************************************************\
@@ -636,7 +541,7 @@ int get_basis(one_problem *p, int *cstat, int *rstat)
  \**********************************************************************************/
 int get_lbound(one_problem *p, double *lb, int begin, int end)
 {
-  return CPXgetlb(env, p->lp, lb, begin, end);
+	return CPXgetlb(env, p->lp, lb, begin, end);
 }
 
 /**********************************************************************************\
@@ -645,7 +550,7 @@ int get_lbound(one_problem *p, double *lb, int begin, int end)
  \**********************************************************************************/
 int get_ubound(one_problem *p, double *ub, int begin, int end)
 {
-  return CPXgetub(env, p->lp, ub, begin, end);
+	return CPXgetub(env, p->lp, ub, begin, end);
 }
 
 /**********************************************************************************\
@@ -654,14 +559,14 @@ int get_ubound(one_problem *p, double *ub, int begin, int end)
  \**********************************************************************************/
 int get_x(one_problem *p, double * x, int begin, int end)
 {
-  return CPXgetx(env, p->lp, x, begin, end);
+	return CPXgetx(env, p->lp, x, begin, end);
 }
 
 
 
 
 /***********************************************************************\
-** This function obtains the vector of optimal primal variables for
+ ** This function obtains the vector of optimal primal variables for
  ** a given problem.  Note that, like most other vectors,
  ** the solution vector reserves the 0th location for its 1-norm, and
  ** the _length_ parameter is assumed not to include it.
@@ -694,7 +599,7 @@ BOOL get_primal(vector X, one_problem *p, int length)
 }
 
 /***********************************************************************\
-** This function obtains the vector of optimal dual variables for
+ ** This function obtains the vector of optimal dual variables for
  ** a given problem.  The vector is allocated and filled here, and
  ** must be freed by the user.  Note that, like most other vectors,
  ** the dual vector reserves the 0th location for its 1-norm, and it is
@@ -724,7 +629,7 @@ BOOL get_dual(vector Pi, one_problem *p, num_type *num, int length)
 				Pi + 1 + length,
 				BATCH_SIZE * num->mast_rows + num->batch_id * num->max_cuts,
 				BATCH_SIZE * num->mast_rows + num->batch_id * num->max_cuts
-						+ num->max_cuts - 1);
+				+ num->max_cuts - 1);
 	}
 	else
 	{
@@ -741,7 +646,7 @@ BOOL get_dual(vector Pi, one_problem *p, num_type *num, int length)
 }
 
 /***********************************************************************\
-** This function obtains the vector of optimal dual slacks  for
+ ** This function obtains the vector of optimal dual slacks  for
  ** a given problem.  The vector is allocated and filled here, and
  ** must be freed by the user.  Note that, like most other vectors,
  ** the dual vector reserves the 0th location for its 1-norm, and it is
@@ -784,7 +689,7 @@ BOOL get_dual_slacks(vector Dj, one_problem *p, num_type *num, int length)
  \**********************************************************************************/
 int get_objname(one_problem *p, char *buf, int bufspace, int *psurplus)
 {
-  return CPXgetobjname(env, p->lp, buf, bufspace, psurplus);
+	return CPXgetobjname(env, p->lp, buf, bufspace, psurplus);
 }
 
 /**********************************************************************************\
@@ -792,10 +697,10 @@ int get_objname(one_problem *p, char *buf, int bufspace, int *psurplus)
  ** the argument problem.
  \**********************************************************************************/
 int get_rowname(one_problem *p, char **name, char *namestore, int storespace,
-                int *psurplus, int begin, int end)
+		int *psurplus, int begin, int end)
 {
-  return CPXgetrowname(env, p->lp, name, namestore, storespace, psurplus,
-                       begin, end);
+	return CPXgetrowname(env, p->lp, name, namestore, storespace, psurplus,
+			begin, end);
 }
 
 /**********************************************************************************\
@@ -803,10 +708,10 @@ int get_rowname(one_problem *p, char **name, char *namestore, int storespace,
  ** in the argument problem.
  \**********************************************************************************/
 int get_colname(one_problem *p, char **name, char *namestore, int storespace,
-                int *psurplus, int begin, int end)
+		int *psurplus, int begin, int end)
 {
-  return CPXgetcolname(env, p->lp, name, namestore, storespace, psurplus,
-                       begin, end);
+	return CPXgetcolname(env, p->lp, name, namestore, storespace, psurplus,
+			begin, end);
 }
 
 /**********************************************************************************\
@@ -814,7 +719,7 @@ int get_colname(one_problem *p, char **name, char *namestore, int storespace,
  \**********************************************************************************/
 int change_probtype(one_problem *p, int type)
 {
-  return CPXchgprobtype(env, p->lp, type);
+	return CPXchgprobtype(env, p->lp, type);
 }
 
 /**********************************************************************************\
@@ -823,7 +728,7 @@ int change_probtype(one_problem *p, int type)
  \**********************************************************************************/
 int change_objective(one_problem *p, int cnt, int *indices, double *values)
 {
-  return CPXchgobj(env, p->lp, cnt, indices, values);
+	return CPXchgobj(env, p->lp, cnt, indices, values);
 }
 
 /*********************************************************************************\
@@ -832,7 +737,7 @@ int change_objective(one_problem *p, int cnt, int *indices, double *values)
  \*********************************************************************************/
 int change_rhside(one_problem *p, int cnt, int *indices, double *values)
 {
-  return CPXchgrhs(env, p->lp, cnt, indices, values);
+	return CPXchgrhs(env, p->lp, cnt, indices, values);
 }
 
 /**********************************************************************************\
@@ -841,11 +746,11 @@ int change_rhside(one_problem *p, int cnt, int *indices, double *values)
  \**********************************************************************************/
 int change_bound(one_problem *p, int cnt, int *indices, char *lu, double *bd)
 {
-  return CPXchgbds(env, p->lp, cnt, indices, lu, bd);
+	return CPXchgbds(env, p->lp, cnt, indices, lu, bd);
 }
 
 /***********************************************************************\
-** This function will change the constraint, objective, or right hand
+ ** This function will change the constraint, objective, or right hand
  ** side coefficients of a given problem.  The coefficients are specified
  ** in the form of a sparse matrix, whose rows and columns correspond
  ** to the rows and columns in the problem (objective row is -1; rhs
@@ -881,23 +786,23 @@ BOOL change_coef(one_problem *p, sparse_matrix *coef)
 /* This function will change a singel coefficient of the problem */
 BOOL change_single_coef(one_problem *p, int row, int col, double coef)
 {
-    
+
 #ifdef TRACE
 	printf("Inside change_single_coef\n");
 #endif
-    
-    if (CPXchgcoef(env, p->lp, row, col, coef))
-        return FALSE;
+
+	if (CPXchgcoef(env, p->lp, row, col, coef))
+		return FALSE;
 
 #ifdef TRACE
 	printf("Exiting change_single_coef\n");
 #endif
-    
+
 	return TRUE;
 }
 
 /***********************************************************************\
-** This function will change the coefficients of one column of the
+ ** This function will change the coefficients of one column of the
  ** constraint matrix (or the right hand side if column is specified as -1)
  ** The non-zero coefficients of the new column are specified in the
  ** _coef_ vector, and are assumed to be contiguous from _start_ to _stop_.
@@ -915,7 +820,7 @@ BOOL change_col(one_problem *p, int column, vector coef, int start, int stop)
 #ifdef DEBUG
 	printf("Changing the following coefficients in column %d.\n", column);
 	for (row = start; row < stop; row++)
-	printf("%d:%f, ", row, coef[row-start]);
+		printf("%d:%f, ", row, coef[row-start]);
 	printf("\n");
 #endif 
 
@@ -939,7 +844,7 @@ BOOL change_col(one_problem *p, int column, vector coef, int start, int stop)
 }
 
 /***********************************************************************\
-** Like change_col(), this function will change the coefficients of
+ ** Like change_col(), this function will change the coefficients of
  ** one row of the constraint matrix (or the ojective function if the
  ** row is specified as -1). The non-zero coefficients of the new row
  **  are specified in the _coef_ vector, and are assumed to be contiguous
@@ -972,7 +877,7 @@ BOOL change_row(one_problem *p, int row, vector coef, int start, int stop)
 }
 
 /***********************************************************************\
-** This function inserts a new row (constraint) into a given problem.
+ ** This function inserts a new row (constraint) into a given problem.
  ** It requires an array of all the non-zero coefficients in the row
  ** and their column location.  It returns TRUE if the row was
  ** successfully added; FALSE otherwise.
@@ -1021,11 +926,11 @@ BOOL add_row(one_problem *p, int start, int stop, int *coef_col, double *coef,
 			p->lp, stop-start+1, yrhs, sense, start, NULL, r_names[0]);
 	printf("rmatind:");
 	for (idx = 0; idx < stop-start+1; idx++)
-	printf(" %d", coef_col[idx]);
+		printf(" %d", coef_col[idx]);
 	printf("\n");
 	printf("rmatval:");
 	for (idx = 0; idx < stop-start+1; idx++)
-	printf(" %f", coef[idx]);
+		printf(" %f", coef[idx]);
 	printf("\n");
 #endif
 
@@ -1069,17 +974,17 @@ BOOL add_row(one_problem *p, int start, int stop, int *coef_col, double *coef,
 
 BOOL remove_row(one_problem *p, int row_num)
 {
-  
+
 #ifdef TRACE
-  printf("Inside remove_row\n");
+	printf("Inside remove_row\n");
 #endif
-  
-  /* modified.  zl
+
+	/* modified.  zl
    return !delrows(p->lp, row_num, row_num);
-   */
-  
-  return !CPXdelrows(env, p->lp, row_num, row_num);
-  
+	 */
+
+	return !CPXdelrows(env, p->lp, row_num, row_num);
+
 }
 
 /***********************************************************************\
@@ -1122,11 +1027,11 @@ BOOL add_row_to_master(one_problem *p, int start, int stop, int *coef_col,
 			p->lp, stop-start+1, yrhs, sense, start, NULL, r_names[0]);
 	printf("rmatind:");
 	for (idx = 0; idx < stop-start+1; idx++)
-	printf(" %d", coef_col[idx]);
+		printf(" %d", coef_col[idx]);
 	printf("\n");
 	printf("rmatval:");
 	for (idx = 0; idx < stop-start+1; idx++)
-	printf(" %f", coef[idx]);
+		printf(" %f", coef[idx]);
 	printf("\n");
 #endif
 
@@ -1170,90 +1075,90 @@ BOOL add_row_to_master(one_problem *p, int start, int stop, int *coef_col,
 /***********************************************************************\
  \***********************************************************************/
 BOOL add_row_to_batch(one_problem *p, int start, int nzcnt, int *coef_col,
-                      double *coef, char sense, double yrhs, int batch_id)
+		double *coef, char sense, double yrhs, int batch_id)
 {
-  int ans;
-  static int cumul_num = 0;
-  
-  char **r_names;
-  double xrhs[1];
-  char xsense[1] =
-  { 'G' };
-  int rmatbeg[1] =
-  { 0 };
-  
+	int ans;
+	static int cumul_num = 0;
+
+	char **r_names;
+	double xrhs[1];
+	char xsense[1] =
+	{ 'G' };
+	int rmatbeg[1] =
+	{ 0 };
+
 #ifdef DEBUG
-  int idx;
+	int idx;
 #endif
-  
+
 #ifdef TRACE
-  printf("Inside add_row_to_batch\n");
+	printf("Inside add_row_to_batch\n");
 #endif
-  
-  /* Give the feasibilty cut a row name */
-  r_names = arr_alloc(2, string);
-  r_names[0] = arr_alloc(NAME_SIZE, char);
-  
-  strcpy(r_names[0], "BCUT     ");
-  r_names[0][4] = '0' + cumul_num / 10000 % 10;
-  r_names[0][5] = '0' + cumul_num / 1000 % 10;
-  r_names[0][6] = '0' + cumul_num / 100 % 10;
-  r_names[0][7] = '0' + cumul_num / 10 % 10;
-  r_names[0][8] = '0' + cumul_num / 1 % 10;
-  r_names[0][9] = 'B';
-  r_names[0][10] = '0' + batch_id / 10 % 10;
-  r_names[0][11] = '0' + batch_id / 1 % 10;
-  
-  cumul_num++;
-  
+
+	/* Give the feasibilty cut a row name */
+	r_names = arr_alloc(2, string);
+	r_names[0] = arr_alloc(NAME_SIZE, char);
+
+	strcpy(r_names[0], "BCUT     ");
+	r_names[0][4] = '0' + cumul_num / 10000 % 10;
+	r_names[0][5] = '0' + cumul_num / 1000 % 10;
+	r_names[0][6] = '0' + cumul_num / 100 % 10;
+	r_names[0][7] = '0' + cumul_num / 10 % 10;
+	r_names[0][8] = '0' + cumul_num / 1 % 10;
+	r_names[0][9] = 'B';
+	r_names[0][10] = '0' + batch_id / 10 % 10;
+	r_names[0][11] = '0' + batch_id / 1 % 10;
+
+	cumul_num++;
+
 #ifdef DEBUG
-  printf("p=%d, nzcnt=%d, rhs=%f, sense=%c, beg[0]=%d, cname=%s, rname=%s.\n",
-         p->lp, nzcnt, yrhs, sense, start, NULL, r_names[0]);
-  printf("rmatind:");
-  for (idx = 0; idx < nzcnt; idx++)
-	printf(" %d", coef_col[idx]);
-  printf("\n");
-  printf("rmatval:");
-  for (idx = 0; idx < nzcnt; idx++)
-	printf(" %f", coef[idx]);
-  printf("\n");
+	printf("p=%d, nzcnt=%d, rhs=%f, sense=%c, beg[0]=%d, cname=%s, rname=%s.\n",
+			p->lp, nzcnt, yrhs, sense, start, NULL, r_names[0]);
+	printf("rmatind:");
+	for (idx = 0; idx < nzcnt; idx++)
+		printf(" %d", coef_col[idx]);
+	printf("\n");
+	printf("rmatval:");
+	for (idx = 0; idx < nzcnt; idx++)
+		printf(" %f", coef[idx]);
+	printf("\n");
 #endif
-  
+
 #ifdef SAVE
-  print_problem(p, "AddFeaRow.mps");
-  print_contents(p, "AddFeaRow.out");
-  printf("Problem successfully printed\n");
+	print_problem(p, "AddFeaRow.mps");
+	print_contents(p, "AddFeaRow.out");
+	printf("Problem successfully printed\n");
 #endif
-  
-  /*
-   ** Add zero new columns and one new row to the constraint matrix,
-   ** according to the _coef_ vector.
-   */
-  xrhs[0] = yrhs;
-  xsense[0] = sense;
-  rmatbeg[0] = start;
-  
-  ans = CPXaddrows(env, p->lp, 0, 1, nzcnt, xrhs, xsense, rmatbeg, coef_col,
-                   coef, NULL, r_names);
-  
-  mem_free(r_names[0]);
-  mem_free(r_names);
-  
+
+	/*
+	 ** Add zero new columns and one new row to the constraint matrix,
+	 ** according to the _coef_ vector.
+	 */
+	xrhs[0] = yrhs;
+	xsense[0] = sense;
+	rmatbeg[0] = start;
+
+	ans = CPXaddrows(env, p->lp, 0, 1, nzcnt, xrhs, xsense, rmatbeg, coef_col,
+			coef, NULL, r_names);
+
+	mem_free(r_names[0]);
+	mem_free(r_names);
+
 #ifdef SAVE
-  if (cumul_num==2)
-  {
-    print_problem(p, "AfterAddFeaRow.mps");
-    print_contents(p, "AfterAddFeaRow.out");
-    printf("Problem successfully printed\n");
-  }
-  
+	if (cumul_num==2)
+	{
+		print_problem(p, "AfterAddFeaRow.mps");
+		print_contents(p, "AfterAddFeaRow.out");
+		printf("Problem successfully printed\n");
+	}
+
 #endif
-  
+
 #ifdef TRACE
-  printf("Exiting add_row_to_master: %d\n", ans);
+	printf("Exiting add_row_to_master: %d\n", ans);
 #endif
-  
-  return (!ans);
+
+	return (!ans);
 }
 
 /***********************************************************************\
@@ -1266,8 +1171,8 @@ void write_prob(one_problem *p, char *file_name)
 #ifdef TRACE
 	printf("inside write_prob\n");
 #endif
-    /* modified by Yifan 2014.02.28 to print out hight precision MPS file */
-    CPXsetintparam(env, CPX_PARAM_MPSLONGNUM, ON);
+	/* modified by Yifan 2014.02.28 to print out hight precision MPS file */
+	CPXsetintparam(env, CPX_PARAM_MPSLONGNUM, ON);
 	status = CPXwriteprob(env, p->lp, file_name, "lp");
 
 	if (status)
@@ -1288,7 +1193,7 @@ void write_prob(one_problem *p, char *file_name)
  \**********************************************************************************/
 int set_intparam(one_problem *p, int whichparam, int newvalue)
 {
-  return CPXsetintparam(env, whichparam, newvalue);
+	return CPXsetintparam(env, whichparam, newvalue);
 }
 
 /***********************************************************************\
@@ -1296,12 +1201,12 @@ int set_intparam(one_problem *p, int whichparam, int newvalue)
  \***********************************************************************/
 int get_qp_nzreadlim(void)
 {
-  int param = 0;
-  
-  CPXgetintparam(env, CPX_PARAM_QPNZREADLIM, &param);
-  printf("CPX_PARAM_QPREADLIM = %d", param);
-  
-  return param;
+	int param = 0;
+
+	CPXgetintparam(env, CPX_PARAM_QPNZREADLIM, &param);
+	printf("CPX_PARAM_QPREADLIM = %d", param);
+
+	return param;
 }
 
 /***********************************************************************\
@@ -1326,13 +1231,13 @@ int set_qp_nzreadlim(int nzreadlim)
  \**********************************************************************************/
 int copy_qp_separable(one_problem *p, double *qsepvec)
 {
-  /* NOTE: CPLEX evaluates the corresponding objective with a factor of 0.5
+	/* NOTE: CPLEX evaluates the corresponding objective with a factor of 0.5
    in front of the quadratic objective term.*/
-  return CPXcopyqpsep(env, p->lp, qsepvec);
+	return CPXcopyqpsep(env, p->lp, qsepvec);
 }
 
 /***********************************************************************\
-** This function obtains the vector of lower bounds (lb) for a given problem.  
+ ** This function obtains the vector of lower bounds (lb) for a given problem.
  ** Note that, like most other vectors, the lb vector reserves the 0th location 
  ** for its 1-norm, and it is assumed that _length_ does not include the 0th 
  ** position. It returns TRUE if the query was successful; FALSE otherwise.
@@ -1384,10 +1289,10 @@ BOOL get_ub(vector ub, one_problem *p, int length)
  \**********************************************************************************/
 int solve_lp(one_problem *p)
 {
-  int status;
-  CPXlpopt(env, p->lp);
-  status = CPXsolution(env, p->lp, NULL, NULL, NULL, NULL, NULL, NULL);
-  return status;
+	int status;
+	CPXlpopt(env, p->lp);
+	status = CPXsolution(env, p->lp, NULL, NULL, NULL, NULL, NULL, NULL);
+	return status;
 }
 
 /**********************************************************************************\
@@ -1395,15 +1300,15 @@ int solve_lp(one_problem *p)
  \**********************************************************************************/
 void *clone_prob(one_problem *p)
 {
-  void *lp;
-  int status = 0;
-  lp = CPXcloneprob(env, p->lp, &status);
-  if (status != 0 || lp == NULL)
-  {
-    printf(" clone_prob: clone problem failed \n");
-    exit(0);
-  }
-  return lp;
+	void *lp;
+	int status = 0;
+	lp = CPXcloneprob(env, p->lp, &status);
+	if (status != 0 || lp == NULL)
+	{
+		printf(" clone_prob: clone problem failed \n");
+		exit(0);
+	}
+	return lp;
 }
 
 /****************************************************************************\
@@ -1411,13 +1316,13 @@ void *clone_prob(one_problem *p)
  \****************************************************************************/
 void change_solver_barrier(one_problem *p)
 {
-  int status = 0;
-  
+	int status = 0;
+
 #ifdef TRACE
-  printf("Inside change_solver_barrier.\n");
+	printf("Inside change_solver_barrier.\n");
 #endif
-  //Change qpmethod to barrier modified by Yifan 06/15/2011
-    /* 
+	//Change qpmethod to barrier modified by Yifan 06/15/2011
+	/*
      0 [CPX_ALG_AUTOMATIC] Automatic: let CPLEX choose
      1 [CPX_ALG_PRIMAL] Primal Simplex
      2 [CPX_ALG_DUAL] Dual Simplex
@@ -1425,34 +1330,34 @@ void change_solver_barrier(one_problem *p)
      4 [CPX_ALG_BARRIER] Barrier
      5 [CPX_ALG_SIFTING] Sifting
      6 [CPX_ALG_CONCURRENT] Concurrent (Dual, Barrier, and Primal)
-     */
-  status = set_intparam(NULL, PARAM_QPMETHOD, ALG_CONCURRENT); /* 2011.10.30 */
+	 */
+	status = set_intparam(NULL, PARAM_QPMETHOD, ALG_CONCURRENT); /* 2011.10.30 */
 
-  if (status)
-  {
-    fprintf(stderr, "Failed to set the optimization method, error %d.\n",
-            status);
-    exit(0);
-  }
-  
-  status = 0;
-  
-  /*
+	if (status)
+	{
+		fprintf(stderr, "Failed to set the optimization method, error %d.\n",
+				status);
+		exit(0);
+	}
+
+	status = 0;
+
+	/*
    -1   No crossover
    0    Automatic: let CPLEX choose; default
    1    Primal crossover
    2    Dual crossover
-   */
-  
-  status = set_intparam(NULL, PARAM_BARCROSSALG, 0); /* 2011.10.30 */
-  
-  
-  if (status)
-  {
-    fprintf(stderr, "Failed to set the barcrossover off, error %d.\n",
-            status);
-    exit(0);
-  }
+	 */
+
+	status = set_intparam(NULL, PARAM_BARCROSSALG, 0); /* 2011.10.30 */
+
+
+	if (status)
+	{
+		fprintf(stderr, "Failed to set the barcrossover off, error %d.\n",
+				status);
+		exit(0);
+	}
 }
 
 /****************************************************************************\
@@ -1466,20 +1371,20 @@ void change_solver_barrier(one_problem *p)
  \****************************************************************************/
 void change_barrier_algorithm(one_problem *p, int k)
 {
-  int status = 0;
-  
+	int status = 0;
+
 #ifdef TRACE
-  printf("Inside change_barrier_algorithm.\n");
+	printf("Inside change_barrier_algorithm.\n");
 #endif
-  
-  status = set_intparam(NULL, PARAM_BARALG, k); /* 2011.10.30 */
-  
-  if (status)
-  {
-    fprintf(stderr, "Failed to set the barrier algorithm, error %d.\n",
-            status);
-    exit(0);
-  }
+
+	status = set_intparam(NULL, PARAM_BARALG, k); /* 2011.10.30 */
+
+	if (status)
+	{
+		fprintf(stderr, "Failed to set the barrier algorithm, error %d.\n",
+				status);
+		exit(0);
+	}
 }
 
 
@@ -1510,15 +1415,15 @@ void change_solver_primal(one_problem *p)
  \**********************************************************************************/
 int get_coef(one_problem *p, int row, int col, double *coef)
 {
-  return CPXgetcoef(env, p->lp, row, col, coef);
+	return CPXgetcoef(env, p->lp, row, col, coef);
 }
 
 int get_basis_head(one_problem *p, int *newhead)
 {
-    return CPXgetbhead(env, p->lp, newhead, NULL);
+	return CPXgetbhead(env, p->lp, newhead, NULL);
 }
 
 int get_basis_row(one_problem *p, int i, double *phi)
 {
-return CPXbinvrow(env, p->lp, i, phi);
+	return CPXbinvrow(env, p->lp, i, phi);
 }

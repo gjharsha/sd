@@ -155,7 +155,6 @@ BOOL get_index_number(sdglobal_type* sd_global, prob_type *p, cell_type *c, soln
             /* Bitwise "(not B) and O " */
             s->rcdata->lhs_chl[j] = (~plain[j]) & s->ids->omega_index[j];
         }
-
         
         /* modified by Yifan 2014.08.01 There's no need to decode anything if there is no random cost*/
 #ifdef CHECK_PHI
@@ -433,7 +432,10 @@ void new_phi(soln_type *s, prob_type *p, int num_of_phi)
         err_msg("Allocation", "new_phi", "s->ids->index[s->ids->current_index_idx]->phi_lambda_idx");
     
     s->ids->index[s->ids->current_index_idx]->phi_cnt = num_of_phi;
+
+#if 0
     printf("\tcurrent_idx:%d;\tnum_of_phi:%d\n",s->ids->current_index_idx, num_of_phi);
+#endif
 }
 
 void free_phi(id_type *index)
@@ -442,6 +444,7 @@ void free_phi(id_type *index)
     for (i = 0; i < index->phi_cnt; i++) {
         mem_free(index->phi_val[i]);
     }
+    mem_free(index->phi_val);
     mem_free(index->phi_cost_delta);
     mem_free(index->phi_col_num);
     mem_free(index->phi_sigma_idx);
@@ -463,10 +466,12 @@ int get_phi_val(soln_type *s, prob_type *p, id_type *index)
     /* First, get the mapping of basis from solver */
     get_basis_head(p->subprob, newhead);
     
+#if 0
     /* Check the content of the basis mapping */
     for (i = 0; i < p->num->sub_rows; i++) {
         printf("newhead[%d]=%d\n", i, newhead[i]);
     }
+#endif
     
     for (i = 0; i < p->num->sub_rows; i++) {
         for (j = 0; j < p->num->rv_g; j++) {
@@ -481,13 +486,14 @@ int get_phi_val(soln_type *s, prob_type *p, id_type *index)
                 /* Save the column number of phi */
                 index->phi_col_num[idx] = s->rcdata->phi_col_num[j];
                 
+#if 0
                 /* Check the content of phi */
                 printf("The following is the phi we want for column %d:\n", index->phi_col_num[idx]);
                 for(k = 0; k < p->num->sub_rows; k++) {
                     printf("phi[%d]:%f\n", k+1, phi[k]);
                 }
                 printf("\n");
-                
+#endif
                 idx++;
             }
         }

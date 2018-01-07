@@ -1,5 +1,5 @@
 /***********************************************************************\
-**
+ **
  ** prob.c
  **
  ** This file contains the routines needed to solve a stochastic LP 
@@ -30,49 +30,38 @@
 #include <string.h>
 
 /***********************************************************************\
-** This function solves an LP using stochastic decomposition.  The
+ ** This function solves an LP using stochastic decomposition.  The
  ** original problem is separated into a master problem and a subproblem,
  ** and also into cells for parallel processing.  Each cell is then
  ** successively solved and married until there is but one cell remaining,
  ** and it is solved.
  \***********************************************************************/
-void solve_SD(sdglobal_type* sd_global, one_problem *original, vector x_k,
-		int num_rv, int num_cipher, int row, int col, char *fname, int batch_id)
-{
-	prob_type *prob;
-	cell_type *cell;
-
-#ifdef TRACE
-	printf("Inside solve_SD\n");
-#endif
+void solve_SD(sdglobal_type* sd_global, one_problem *original, vector x_k, int num_rv, int num_cipher, int row, int col, char *fname, int batch_id) {
+	prob_type *prob = NULL;
+	cell_type *cell = NULL;
 
 	prob = new_prob(sd_global, original, num_rv, num_cipher, row, col);
 	prob->current_batch_id = batch_id;
 	init_param(sd_global, prob);
 	cell = new_cell(sd_global, prob, 0);
+
 #ifdef RUN
-	if (batch_id == 0)
-	{
+	if (batch_id == 0) {
 		print_num(sd_global, prob->num);
 	}
 #endif
 
-#ifdef SAVE
-	print_contents(prob->master, "master.out");
-	print_contents(prob->subprob, "subprob.out");
-#endif
-	printf("\n\n-------------------- Replication No.%d --------------------\n",
-			batch_id);
+	printf("\n\n-------------------- Replication No.%d --------------------\n", batch_id);
 	solve_cell(sd_global, cell, prob, x_k, fname);
 
 	print_contents(prob->master, "final_master.lp");
 
 	free_cell(cell, prob->num);
 	free_prob(sd_global, prob);
-}
+}//END solve_SD()
 
 /***********************************************************************\
-** This function allocates memory for the fields of the problem
+ ** This function allocates memory for the fields of the problem
  ** data structure, separates the original problem into two stages,
  ** and initializes the rest of the fields in the problem.
  \***********************************************************************/
@@ -100,8 +89,8 @@ prob_type *new_prob(sdglobal_type* sd_global, one_problem *original, int num_rv,
 
 	if (!(p->Tbar = (sparse_matrix *) mem_malloc (sizeof(sparse_matrix))))
 		err_msg("Allocation", "new_prob", "prob->Tbar");
-    
-    if (!(p->Gbar = (sparse_vect *) mem_malloc (sizeof(sparse_vect))))
+
+	if (!(p->Gbar = (sparse_vect *) mem_malloc (sizeof(sparse_vect))))
 		err_msg("Allocation", "new_prob", "prob->Gbar");
 
 	/* In the regularized QP method, we need master's A matrix too. zl */
@@ -129,7 +118,7 @@ prob_type *new_prob(sdglobal_type* sd_global, one_problem *original, int num_rv,
 	 */
 
 	decompose(sd_global, original, p, row, col);
-    
+
 	/* 
 	 ** Initialize the coord structure according to the locations
 	 ** of the random variables in omega.  Also initialize some
@@ -148,42 +137,39 @@ prob_type *new_prob(sdglobal_type* sd_global, one_problem *original, int num_rv,
 	 ** so that they begin at zero.  Then add one to both row and col coordinates
 	 ** to obtain 1-based indices.  Also count the number of random variables
 	 ** which occur in R and T, based on the column coordinate of each rv.
-     ** Extension added by Yifan: besides R and T, count the number of random
-     ** variables which occur in g and W, based on the row cordinate of each
-     ** rv.
+	 ** Extension added by Yifan: besides R and T, count the number of random
+	 ** variables which occur in g and W, based on the row cordinate of each
+	 ** rv.
 	 */
-    /* modified by Yifan 2013.10.14 */
+	/* modified by Yifan 2013.10.14 */
 	for (r = 1; r <= num_rv; r++)
-        if (p->coord->omega_row[r] != -1) {
-            p->coord->omega_row[r] += (1 - row);
-        }
-    /* modified by Yifan 2013.10.14 */
+		if (p->coord->omega_row[r] != -1) {
+			p->coord->omega_row[r] += (1 - row);
+		}
+	/* modified by Yifan 2013.10.14 */
 	for (c = 1; c <= num_rv; c++)
 		if (++p->coord->omega_col[c])
-        {   if (p->coord->omega_col[c] <= col)
-                ++p->num->rv_T;
-            else if (++p->coord->omega_row[c])
-                ++p->num->rv_W;
-            else
-                ++p->num->rv_g;
-        }
+		{   if (p->coord->omega_col[c] <= col)
+			++p->num->rv_T;
+		else if (++p->coord->omega_row[c])
+			++p->num->rv_W;
+		else
+			++p->num->rv_g;
+		}
 		else
 			++p->num->rv_R;
 
-    /* modified by Yifan 2013.10.14 Since omega_col and omega_row all shifted up 
+	/* modified by Yifan 2013.10.14 Since omega_col and omega_row all shifted up
      by one. The mast_col used in find_rows and find_cols will be increased by one*/
-	p->coord->delta_col = find_cols(num_rv, &p->num->rv_cols,
-			p->coord->omega_col, col+1);
-	p->coord->sigma_col = find_cols(p->Tbar->cnt, &p->num->nz_cols,
-			p->Tbar->col, col+1);
-	p->coord->lambda_row = find_rows(num_rv, &p->num->rv_rows,
-			p->coord->omega_row, p->coord->omega_col, col+1);
+	p->coord->delta_col = find_cols(num_rv, &p->num->rv_cols, p->coord->omega_col, col+1);
+	p->coord->sigma_col = find_cols(p->Tbar->cnt, &p->num->nz_cols, p->Tbar->col, col+1);
+	p->coord->lambda_row = find_rows(num_rv, &p->num->rv_rows, p->coord->omega_row, p->coord->omega_col, col+1);
 
 	return p;
 }
 
 /***********************************************************************\
-** This function frees the fields of the problem data structure.
+ ** This function frees the fields of the problem data structure.
  ** Note that it *does* free the arrays and other data associated with
  ** each of the fields.  Everything goes!
  \***********************************************************************/
@@ -232,7 +218,7 @@ void free_prob(sdglobal_type* sd_global, prob_type *p)
 }
 
 /***********************************************************************\
-** This function frees all non-NULL the arrays in a one_problem 
+ ** This function frees all non-NULL the arrays in a one_problem
  ** structure, which is used by CPLEX to solve problems.  It is assumed
  ** that the problem has already been unloaded!  Also, if arrays were left 
  ** un-initialized, there will be problems!
@@ -337,7 +323,7 @@ void init_param(sdglobal_type* sd_global, prob_type *p)
 }
 
 /***********************************************************************\
-** This function separates a single CPLEX LP into two stages, based on
+ ** This function separates a single CPLEX LP into two stages, based on
  ** a (row,column) breakpoint supplied by the caller.  Elements of
  ** the cost vector less than _col_ become costs for the master
  ** while those greater become part of the subproblem.  Elements
@@ -440,11 +426,11 @@ int decompose(sdglobal_type* sd_global, one_problem *orig, prob_type *p,
 
 	p->Tbar->cnt = 0;
 	p->Rbar->cnt = 0;
-    p->Gbar->cnt = 0;
+	p->Gbar->cnt = 0;
 	p->num->rv_R = 0;
 	p->num->rv_T = 0;
-    p->num->rv_g = 0;   /* modified by Yifan 2013.10.14 */
-    p->num->rv_W = 0;   /* modified by Yifan 2013.10.14 */
+	p->num->rv_g = 0;   /* modified by Yifan 2013.10.14 */
+	p->num->rv_W = 0;   /* modified by Yifan 2013.10.14 */
 	p->num->mast_rows = row;
 	p->num->mast_cols = col;
 	p->num->sub_rows = s->mar;
@@ -488,7 +474,7 @@ int decompose(sdglobal_type* sd_global, one_problem *orig, prob_type *p,
 		err_msg("Allocation", "decompose", "Rbar->row");
 	if (!(p->Rbar->val = arr_alloc(orig->marsz+1, double)))
 		err_msg("Allocation", "decompose", "Rbar->val");
-    if (!(p->Gbar->row = arr_alloc(orig->macsz+1, int)))
+	if (!(p->Gbar->row = arr_alloc(orig->macsz+1, int)))
 		err_msg("Allocation", "decompose", "Gbar->row");
 	if (!(p->Gbar->val = arr_alloc(orig->macsz+1, double)))
 		err_msg("Allocation", "decompose", "Gbar->val");
@@ -691,13 +677,13 @@ int decompose(sdglobal_type* sd_global, one_problem *orig, prob_type *p,
 			}
 		}
 	}
-    
-    /* modified by Yifan 2014.06.11 */
-    for (c = col; c < orig->mac; c++) {
-        p->Gbar->val[p->Gbar->cnt + 1] = orig->objx[c];
+
+	/* modified by Yifan 2014.06.11 */
+	for (c = col; c < orig->mac; c++) {
+		p->Gbar->val[p->Gbar->cnt + 1] = orig->objx[c];
 		p->Gbar->row[p->Gbar->cnt + 1] = c - col + 1;
 		++p->Gbar->cnt;
-    }
+	}
 
 	/*
 	 ** Copy the names of each constraint row for
@@ -770,10 +756,10 @@ int decompose(sdglobal_type* sd_global, one_problem *orig, prob_type *p,
 			(int *) mem_realloc (p->Rbar->row, (p->Rbar->cnt+1)*sizeof(int));
 	p->Rbar->val = (double *) mem_realloc (p->Rbar->val,
 			(p->Rbar->cnt+1)*sizeof(double));
-    p->Gbar->row =
-    (int *) mem_realloc (p->Gbar->row, (p->Gbar->cnt+1)*sizeof(int));
+	p->Gbar->row =
+			(int *) mem_realloc (p->Gbar->row, (p->Gbar->cnt+1)*sizeof(int));
 	p->Gbar->val = (double *) mem_realloc (p->Gbar->val,
-                                           (p->Gbar->cnt+1)*sizeof(double));
+			(p->Gbar->cnt+1)*sizeof(double));
 
 	/* While in regularized QP method, we need to reallocate the space for
 	 master's A matrix too.  zl */
@@ -817,7 +803,7 @@ int decompose(sdglobal_type* sd_global, one_problem *orig, prob_type *p,
 }
 
 /****************************************************************************\
-** This function parses the command line paramenters and prompts the user
+ ** This function parses the command line paramenters and prompts the user
  ** for startup information required by SD.  It will determine how many
  ** problems will be solved (one or many) based on the command line arguments.
  ** A lack of arguments means that only one problem should be solved, and
@@ -828,19 +814,14 @@ int decompose(sdglobal_type* sd_global, one_problem *orig, prob_type *p,
  \****************************************************************************/
 void parse_cmd_line(sdglobal_type* sd_global, int argc, char *argv[],
 		char *fname, int *objsen, int *num_probs, int *start, BOOL *read_seeds,
-		BOOL *read_iters)
-{
-  int status;
-	if (argc < 2)
-	{
-        printf("Please enter the name of the problem files (eg. `exags1p'): ");
-        status = scanf("%s", fname);
-        if (status <= 0) {
-          printf("You entered nothing.\n");
-        }
-		/*
-		 printf("Please enter the sense of the objective function (max=-1, min=1)");
-		 scanf("%d", objsen);*/
+		BOOL *read_iters) {
+	int status;
+	if (argc < 2){
+		printf("Please enter the name of the problem files (eg. `exags1p'): ");
+		status = scanf("%s", fname);
+		if (status <= 0) {
+			printf("You entered nothing.\n");
+		}
 		*objsen = 1;
 		*num_probs = 1;
 		*read_seeds = TRUE;
@@ -848,20 +829,12 @@ void parse_cmd_line(sdglobal_type* sd_global, int argc, char *argv[],
 	}
 	else if (argc < 3)
 	{
-        /*
-		strcpy(fname, "prob   ");
-		*num_probs = atoi(argv[1]);
+		/* modified by Yifan 2014.08.04 */
+		strcpy(fname, argv[1]);
 		*objsen = 1;
-		*start = 0;
+		*num_probs = 1;
 		*read_seeds = TRUE;
-		*read_iters = TRUE;*/ /* added by zl. 06/18/02. */
-        
-        /* modified by Yifan 2014.08.04 */
-        strcpy(fname, argv[1]);
-        *objsen = 1;
-        *num_probs = 1;
-        *read_seeds = TRUE;
-        *read_iters = TRUE;
+		*read_iters = TRUE;
 	}
 	else if (argc == 5)
 	{
@@ -910,7 +883,7 @@ void parse_cmd_line(sdglobal_type* sd_global, int argc, char *argv[],
 }
 
 /****************************************************************************\
-** This function informs the user of an error, and aborts the program.
+ ** This function informs the user of an error, and aborts the program.
  ** The first parameter is a string which describes what type of error
  ** has occurred (e.g. Allocation, NULL pointer, etc.)  The second
  ** parameter gives the function in which the error was recognized
@@ -930,24 +903,24 @@ void err_msg(char *type, char *place, char *item)
 void get_lower_bound(sdglobal_type* sd_global, one_problem *p, int row, int col)
 {
 	int ans, cnt;
-//	int scr_stat;
+	//	int scr_stat;
 	int *indices;
 	double *values;
 	double lower_bound;
 	one_problem *copy;
-    BOOL zero_lb = TRUE;
+	BOOL zero_lb = TRUE;
 
-    for (cnt = col; cnt < p->mac; cnt++) {
-        if (p->objx[cnt] < 0 || p->bdl[cnt] < 0) {
-            zero_lb = FALSE;
-        }
-    }
-    
-    if (zero_lb) {
-        sd_global->Eta0 = 0.0;
-        return;
-    }
-    
+	for (cnt = col; cnt < p->mac; cnt++) {
+		if (p->objx[cnt] < 0 || p->bdl[cnt] < 0) {
+			zero_lb = FALSE;
+		}
+	}
+
+	if (zero_lb) {
+		sd_global->Eta0 = 0.0;
+		return;
+	}
+
 	if (!(copy = (one_problem *) mem_malloc (sizeof(one_problem))))
 		err_msg("Allocation", "get_lower_bound", "copy");
 	if (!(sd_global->Bbar = arr_alloc(col+3, double)))
@@ -983,7 +956,7 @@ void get_lower_bound(sdglobal_type* sd_global, one_problem *p, int row, int col)
 	/*
      write_prob(copy, "before_coef_change.lp");
 	 */
-	
+
 
 	/* Change the objective to lower bound calculation */
 	change_objective(copy, p->mac, indices, values);
@@ -1007,11 +980,11 @@ void get_lower_bound(sdglobal_type* sd_global, one_problem *p, int row, int col)
 
 	lower_bound = get_objective(copy);
 	sd_global->Eta0 = lower_bound + sd_global->Abar;
-    
-    if (sd_global->Eta0 >= 0) {
-        zero_lb = TRUE;
-        sd_global->Eta0 = 0.0;
-    }
+
+	if (sd_global->Eta0 >= 0) {
+		zero_lb = TRUE;
+		sd_global->Eta0 = 0.0;
+	}
 
 	printf("lower_bound is %f\n", lower_bound);
 	printf("Eta0 is %f\n", sd_global->Eta0);
@@ -1024,7 +997,7 @@ void get_lower_bound(sdglobal_type* sd_global, one_problem *p, int row, int col)
 }
 
 /****************************************************************************\
-****  added by Yifan Mar 29 2011 * get the dual solution, Tbar, Rbar, alpha, beta  **
+ ****  added by Yifan Mar 29 2011 * get the dual solution, Tbar, Rbar, alpha, beta  **
  \****************************************************************************/
 void calc_alpha_beta(sdglobal_type* sd_global, one_problem *p, int row, int col)
 {
@@ -1105,7 +1078,7 @@ void calc_alpha_beta(sdglobal_type* sd_global, one_problem *p, int row, int col)
 	{
 		sd_global->Bbar[prob->Tbar->col[j]] =
 				sd_global->Bbar[prob->Tbar->col[j]]
-						+ y_i[row + prob->Tbar->row[j]] * prob->Tbar->val[j];
+								+ y_i[row + prob->Tbar->row[j]] * prob->Tbar->val[j];
 	}
 	sd_global->Bbar[col + 2] = -1;
 
@@ -1124,10 +1097,10 @@ void calc_alpha_beta(sdglobal_type* sd_global, one_problem *p, int row, int col)
 void generate_seed(sd_long * seed1, sd_long * seed2)
 {
 	int idx, cnt;
-    sd_long rseed1, rseed2;
+	sd_long rseed1, rseed2;
 
 	printf("time:%ld\n", time(NULL) % 3600);
-    srand((unsigned int) time(NULL));
+	srand((unsigned int) time(NULL));
 	for (cnt = 0; cnt < BATCH_SIZE; cnt++)
 	{
 		for (idx = 0; idx < 4; idx++)
@@ -1136,14 +1109,14 @@ void generate_seed(sd_long * seed1, sd_long * seed2)
 			/* printf("rseed1 before:%lx\n",rseed1); */
 			rseed1 = rseed1 & 0x000000000000FFFF;
 			/* printf("rseed1 after:%lx\n\n",rseed1); */
-          if (idx == 0) {
-            rseed2 = rseed1;
-          }
-          else{
-            rseed2 = rseed2 << 16;
-            rseed2 = rseed1|rseed2 ;
-            /* printf("rseed2 after:%lx\n\n",rseed2);*/
-          }
+			if (idx == 0) {
+				rseed2 = rseed1;
+			}
+			else{
+				rseed2 = rseed2 << 16;
+				rseed2 = rseed1|rseed2 ;
+				/* printf("rseed2 after:%lx\n\n",rseed2);*/
+			}
 		}
 		seed1[cnt] = rseed2;
 	}

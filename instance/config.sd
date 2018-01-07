@@ -44,7 +44,7 @@ EVAL_RUN_FLAG 0
 
 // Set EVAL_FLAG to 1 to get an estimated objective function value
 // for the final incumbent of each replication.
-EVAL_FLAG 1
+EVAL_FLAG 0
 
 // Random number seed for resampling omegas during optimality test.
 EVAL_SEED1    2668655841019641

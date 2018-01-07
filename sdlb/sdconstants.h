@@ -13,7 +13,7 @@
 #define KEY_PAGE	500 / MAX_BITS
 
 //input.c
-#define WORDSIZE 16
+#define WORDSIZE 64
 #define BLOCKSIZE 20
 #define STRSIZE 180
 
@@ -67,7 +67,7 @@ static const int   BLOCKS_TYPE       =  2;
 /*
  ** Some constants used in various places
  */
-#define NAME_SIZE	16	/* length of CPLEX problem names */
+#define NAME_SIZE	64	/* length of CPLEX problem names */
 #define RHS_COL		-1	/* index of the right hand side in CPLEX */
 #define GE		'G'	/* code for a >= constraint in CPLEX */
 #define LE		'L'

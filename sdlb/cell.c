@@ -1,5 +1,5 @@
 /************************************************************************\
-**
+ **
  ** cell.c
  **
  **
@@ -39,7 +39,7 @@
 #include "rc.h"
 FILE *fix;
 /************************************************************************\
-** This function represents the SD algorithm, as solved for a
+ ** This function represents the SD algorithm, as solved for a
  ** single cell.  It creates temporary data structures required for
  ** the solution, then proceeds with the iterative algorithm.
  ** It terminates when an optimal solution has been discovered,
@@ -59,7 +59,7 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 	double conf_int[2]; /* JH 3/13/98 */
 	int num_subproblems = 0; /* JH 3/12/98 */
 	FILE *f2_out; /* JH 3/12/98 */
-    FILE *time_sample; /*Yifan 2013.06.30*/
+	FILE *time_sample; /*Yifan 2013.06.30*/
 	FILE *master_dual = NULL; /*Yiifan 2012-09-11*/
 	FILE *batch_dual = NULL; /*Yifan 2012-09-11*/
 	FILE *master_obj = NULL; /*Yifan 2012-09-23*/
@@ -72,193 +72,116 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 	clock_t total_start_time, total_end_time; /* zl 06/29/04 */
 	clock_t iter_start_time, iter_end_time; /* zl 06/29/04 */
 	clock_t argmax_start, argmax_end; /* zl 06/30/04 */
-    clock_t batch_start, batch_end; /* modified by Yifan 2013.10.31 */
-    clock_t resume_start_time, resume_end_time; /* modified by Yifan 2014.04.02 */
-    FILE *resume_time;
-    double batch_time;
+	clock_t batch_start, batch_end; /* modified by Yifan 2013.10.31 */
+	clock_t resume_start_time, resume_end_time; /* modified by Yifan 2014.04.02 */
+	FILE *resume_time;
+	double batch_time;
 	FILE *time_file, *obj_file; /* zl 06/29/04 */
 	char time_fname[NAME_SIZE * 2], obj_fname[NAME_SIZE * 2]; /* modified by Yifan to store longer names */
 	/* zl 06/30/04 */
 	BOOL incumb_change = FALSE;
-//  int batch_id;
-	/*  double        sigma = 1.0;  _sigma_ here is a parameter to control the
-	 effect of the quadratic term in regularized 
-	 QP method. zl */
 
-#ifdef DEBUG
-	int idx;
-#endif
-
-#ifdef TRACE
-	printf("Inside solve_cel\n");
-#endif
-
-	/* Open the file to record run time spent on different procedures.
-	 zl, 06/29/04. */
+	/* Open the file to record run time spent on different procedures. */
 	strcpy(time_fname, fname);
 	strcat(time_fname, ".time.out");
 	time_file = fopen(time_fname, "w+");
 
-	/* open the file to record the UB, LB, and error per iteration. 
-	 zl, 06/30/04. */
+	/* open the file to record the UB, LB, and error per iteration.  zl, 06/30/04. */
 	strcpy(obj_fname, fname);
 	strcat(obj_fname, ".obj.out");
 	obj_file = fopen(obj_fname, "w+");
 	fprintf(obj_file, "Iter \tincumb_est \tcandid_est \terror\n");
-#ifdef DEBUG
-	times(&total_init_time); /* zl, 08/18/04. */
-#endif
 	total_start_time = clock(); /* zl, 06/29/04. */
 
 	phi[2] = 0;
 	soln = new_soln(sd_global, prob, x_k);
-    
-    /* modified by Yifan 2014.06.17 Keep track of the column of random cost */
-    get_omega_index(prob, soln);
-    
+
+	/* modified by Yifan 2014.06.17 Keep track of the column of random cost */
+	get_omega_index(prob, soln);
+
 	if (!(cell->master = new_master(prob->master, cell->cuts,
 			prob->num->max_cuts, x_k)))
 		err_msg("Copy", "solve_cell", "cell->master");
 
 	/* Initialize data structure for Batch-Mean problem at the begining of the first iteration Yifan 2012-09-10 */
-	if (prob->current_batch_id == 0)
-	{
-		if (!(sd_global->batch_problem = new_batch_problem(prob->master,
-				prob->num->max_cuts)))
+	if (prob->current_batch_id == 0) {
+		if (!(sd_global->batch_problem = new_batch_problem(prob->master, prob->num->max_cuts)))
 			err_msg("Copy", "solve_cell", "cell->subprob");
 		new_batch_incumb(sd_global, prob, x_k);
 
 		/* modified by Yifan 2013.02.15 */
 		sd_global->bcuts = new_bcuts(prob, BATCH_SIZE, sd_global->bcuts);
-		/* modified by Yifan 2013.05.05 */
 		sd_global->bfcuts = new_bcuts(prob, BATCH_SIZE, sd_global->bfcuts);
-		sd_global->bfcuts_pool = new_bcuts(prob, BATCH_SIZE,
-				sd_global->bfcuts_pool);
+		sd_global->bfcuts_pool = new_bcuts(prob, BATCH_SIZE, sd_global->bfcuts_pool);
 
 		sd_global->quad_v = arr_alloc(BATCH_SIZE, double);
-		/* modified by Yifan 2012.10.05 */
 		sd_global->Obj_lb = arr_alloc(BATCH_SIZE,double);
 	}
 
 	if (!(cell->subprob = new_subprob(prob->subprob)))
 		err_msg("Copy", "solve_cell", "cell->subprob");
 
-#ifdef DEBUG
-	printf("cell->master->lp = %d\n", cell->master->lp);
-	printf("cell->subprob->lp = %d\n", cell->subprob->lp);
-	printf("Writing problems\n");
-	print_contents(cell->master, "master.out");
-	print_contents(cell->subprob, "subprob.out");
-	printf("Wrote our version\n");
-	print_problem(cell->master, "master.mps");
-	print_problem(cell->subprob, "subprob.mps");
-	printf("Wrote CPLEX's version\n");
-#endif
-
 	/* In regularized QP method, we construct the Q matrix for the quadratic
 	 term of the regularized master problem. Also we need to change the rhs 
 	 and lower bounds from 'x' to 'd' here. zl */
-	if (sd_global->config.MASTER_TYPE == SDQP)
-	{
+	if (sd_global->config.MASTER_TYPE == SDQP) {
 		construct_QP(prob, cell, cell->quad_scalar); //modified by Yifan 09/14/2011
 		change_rhs(prob, cell, soln);
 		change_bounds(prob, cell, soln);
 	}
 
-	fprintf(time_file, "Iter\t %s\t %s\t %s\t %s\t %s\t", "Iter_time", "Master",
-			"Subprob", "Full_Test", "argmax");
+	fprintf(time_file, "Iter\t %s\t %s\t %s\t %s\t %s\t", "Iter_time", "Master", "Subprob", "Full_Test", "argmax");
 
-	fprintf(time_file, "%s\t %s\t %s\t %s\t %s\n", "Iter_acc", "Master_acc",
-			"Subprob_acc", "Full_Test_acc", "argmax_acc");
+	fprintf(time_file, "%s\t %s\t %s\t %s\t %s\n", "Iter_acc", "Master_acc", "Subprob_acc", "Full_Test_acc", "argmax_acc");
 
-	/*Code below are added for evaluation!!!!!*/
+	write_statistics(sd_global, prob, cell, soln);
 
-#if 0
-	fix=fopen("eval_input1.txt", "r");
+	/* modified by Yifan 2014.01.12 */
+	if (sd_global->resume_flag) {
+		resume_start_time = clock();
+		restore_sd_data_b(sd_global, prob, cell, soln);
+		resume_end_time = clock();
+		resume_time = fopen("resume_time", "a");
+		if (prob->current_batch_id == 0) {
+			fprintf(resume_time, "Resume from EPSILON: %f\n",sd_global->config.TOLERANCE);
+		}
+		fprintf(resume_time, "Replication %2d:%f\n",prob->current_batch_id,((double) (resume_end_time-resume_start_time)/CLOCKS_PER_SEC));
+		fclose(resume_time);
+		if (1) {
+			free_master(cell->master);
+			if (!(cell->master = new_master(prob->master, cell->cuts, prob->num->max_cuts, NULL)))
+				err_msg("Copy", "solve_cell", "cell->master");
+			/* Now update cuts coefficiets with data from cuts structure */
+			for (i = prob->num->mast_rows; i <= prob->num->mast_rows + cell->cuts->cnt; i++) {
+				for (j = 0; j < cell->cuts->cnt; j++) {
+					if (i == cell->cuts->val[j]->row_num) {
+						for (cnt = 0 ; cnt < prob->master->mac; cnt++) {
+							change_single_coef(cell->master, i, cnt, cell->cuts->val[j]->beta[cnt+1]);
+						}
+						change_single_coef(cell->master, i, -1, cell->cuts->val[j]->alpha_incumb);
+					}
+				}
+			}
 
-	soln->incumb_x[0]=0.0;
-	for (i=1; i<=prob->num->mast_cols; i++)
-	{
-		fscanf(fix, "%lf",&soln->incumb_x[i]);
-		soln->incumb_x[0]+=soln->incumb_x[i];
+			/* Update master's rhs and bounds */
+			if (sd_global->config.MASTER_TYPE == SDQP)
+			{
+				change_rhs(prob, cell, soln);
+				change_bounds(prob, cell, soln);
+			}
+
+			construct_QP(prob, cell, cell->quad_scalar);
+
+			/* Update eta coefficient on all cuts, based on cut_obs , now use k, sicne it is previous iteration number*/
+			change_eta_col(cell->master, cell->cuts, cell->k, soln, prob->num);
+		}
+
 	}
-	evaluate_inc(sd_global,cell,prob, soln, soln->incumb_x, fname,conf_int,4);
-
-	fclose(fix);
-#endif
-    
-
-	/*Code above are added for evaluation!!!!!*/
-
-	/*
-	 while (!optimal(prob, cell, soln, phi) && cell->k < prob->num->iter)
-	 */
-	/* modified by zl, 06/30/04. 
-	 while (!(soln->optimality_flag) && cell->k < prob->num->iter)
-	 */
-	/* modified by zl, 08/10/04. */
-    write_statistics(sd_global, prob, cell, soln);
-
-    /* modified by Yifan 2014.01.12 */
-    if (sd_global->resume_flag) {
-        resume_start_time = clock();
-        restore_sd_data_b(sd_global, prob, cell, soln);
-        resume_end_time = clock();
-        resume_time = fopen("resume_time", "a");
-        if (prob->current_batch_id == 0) {
-            fprintf(resume_time, "Resume from EPSILON: %f\n",sd_global->config.TOLERANCE);
-        }
-        fprintf(resume_time, "Replication %2d:%f\n",prob->current_batch_id,((double) (resume_end_time-resume_start_time)/CLOCKS_PER_SEC));
-        fclose(resume_time);
-        if (1) {
-            free_master(cell->master);
-            if (!(cell->master = new_master(prob->master, cell->cuts, prob->num->max_cuts, NULL)))
-                err_msg("Copy", "solve_cell", "cell->master");
-            /* Now update cuts coefficiets with data from cuts structure */
-            for (i = prob->num->mast_rows; i <= prob->num->mast_rows + cell->cuts->cnt; i++) {
-                for (j = 0; j < cell->cuts->cnt; j++) {
-                    if (i == cell->cuts->val[j]->row_num) {
-                        for (cnt = 0 ; cnt < prob->master->mac; cnt++) {
-                            change_single_coef(cell->master, i, cnt, cell->cuts->val[j]->beta[cnt+1]);
-                        }
-                        change_single_coef(cell->master, i, -1, cell->cuts->val[j]->alpha_incumb);
-                    }
-                }
-            }
-            
-            
-            /* Update master's rhs and bounds */
-            if (sd_global->config.MASTER_TYPE == SDQP)
-            {
-                change_rhs(prob, cell, soln);
-                change_bounds(prob, cell, soln);
-            }
-            
-            construct_QP(prob, cell, cell->quad_scalar);
-            
-            /* Update eta coefficient on all cuts, based on cut_obs , now use k, sicne it is previous iteration number*/
-            change_eta_col(cell->master, cell->cuts, cell->k, soln, prob->num);
-            
-//            if (sd_global->config.LB_TYPE == 1)
-//            {
-//                update_rhs(sd_global, prob, cell, soln);
-//            }
-//            
-//            
-//            if (!solve_problem(sd_global, cell->master))
-//            {
-//                cplex_err_msg(sd_global, "QP_Master", prob, cell, soln);
-//                return;
-//            }
-        }
-
-    }
 
 
-	while (TRUE)
-	{
+	while (TRUE) {
 		//for (batch_id=0; batch_id<1; batch_id++) {
-        //printf("Iteration %d\n. soln->Master_pi[0]: %.17g\n soln->Master_pi[1]: %.17g\n soln->Master_pi[2]: %.17g\n soln->Master_pi[3]: %.17g\n soln->Master_pi[4]: %.17g\n soln->Master_pi[5]: %.17g\n soln->Master_pi[6]: %.17g\n soln->Master_pi[7]: %.17g\n soln->Master_pi[8]: %.17g\n soln->Master_pi[9]: %.17g\n", cell->k, soln->Master_pi[0], soln->Master_pi[1], soln->Master_pi[2], soln->Master_pi[3], soln->Master_pi[4], soln->Master_pi[5], soln->Master_pi[6], soln->Master_pi[7], soln->Master_pi[8], soln->Master_pi[9]);
+		//printf("Iteration %d\n. soln->Master_pi[0]: %.17g\n soln->Master_pi[1]: %.17g\n soln->Master_pi[2]: %.17g\n soln->Master_pi[3]: %.17g\n soln->Master_pi[4]: %.17g\n soln->Master_pi[5]: %.17g\n soln->Master_pi[6]: %.17g\n soln->Master_pi[7]: %.17g\n soln->Master_pi[8]: %.17g\n soln->Master_pi[9]: %.17g\n", cell->k, soln->Master_pi[0], soln->Master_pi[1], soln->Master_pi[2], soln->Master_pi[3], soln->Master_pi[4], soln->Master_pi[5], soln->Master_pi[6], soln->Master_pi[7], soln->Master_pi[8], soln->Master_pi[9]);
 		iter_start_time = clock(); /* zl, 06/29/04. */
 		/* The argmax procedures involve in two functions, namely,
 		 form_new_cut and form_incumb_cut; solve_subprob() function is 
@@ -287,7 +210,7 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 		 one from the original code. zl, 08/09/08.
 		 And the number of optimality tests may be off. zl, 08/10/04. */
 		//printf("Iteration: %d\tThis is opt-flag: %d, s->flag: %d \n",cell->k, soln->optimality_flag, *soln->dual_statble_flag);
-        //printf("Candid-est: %f, Incumbent-est: %f\n", soln->candid_est, soln->incumb_est);
+		//printf("Candid-est: %f, Incumbent-est: %f\n", soln->candid_est, soln->incumb_est);
 		/*Update code in this "if statement" for Batch-mean Yifan 2012-09-05*/
 		if ((soln->optimality_flag && *soln->dual_statble_flag)
 				|| cell->k >= prob->num->iter)
@@ -304,7 +227,7 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 			/* write_prob(sd_global->batch_problem, "final-1cut-a.lp");*/
 			update_batch_rhs(sd_global, prob, cell, soln, prob->current_batch_id);
 			update_batch_bounds(sd_global, prob, cell, soln, prob->current_batch_id);
-            // change_rhs_back(prob, cell, soln);
+			// change_rhs_back(prob, cell, soln);
 			save_batch_incumb(sd_global, prob, cell, soln,
 					prob->current_batch_id);
 
@@ -312,10 +235,11 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 
 			/* modified by Yifan 2013.02.15 */
 			sd_global->bcuts->batch[prob->current_batch_id] = cell->cuts;
-			sd_global->bfcuts->batch[prob->current_batch_id] =
-					cell->feasible_cuts_added;
-			sd_global->bfcuts_pool->batch[prob->current_batch_id] =
-					cell->feasible_cuts_pool;
+			sd_global->bcuts->b_size++;
+			sd_global->bfcuts->batch[prob->current_batch_id] = cell->feasible_cuts_added;
+			sd_global->bfcuts->b_size++;
+			sd_global->bfcuts_pool->batch[prob->current_batch_id] = cell->feasible_cuts_pool;
+			sd_global->bfcuts_pool->b_size++;
 
 			for (i = 0; i < prob->num->max_cuts; i++)
 			{
@@ -359,11 +283,11 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 				add_batch_equality(sd_global, prob, cell, soln);
 
 				/*Get batch dual and obj and corresponding statistics*/
-                write_prob(sd_global->batch_problem, "final-batch-prob.lp");
-                batch_start = clock();
-                solve_problem(sd_global, sd_global->batch_problem);
-                batch_end = clock();
-                batch_time = ((double) (batch_end - batch_start))/ CLOCKS_PER_SEC;
+				write_prob(sd_global->batch_problem, "final-batch-prob.lp");
+				batch_start = clock();
+				solve_problem(sd_global, sd_global->batch_problem);
+				batch_end = clock();
+				batch_time = ((double) (batch_end - batch_start))/ CLOCKS_PER_SEC;
 				process_batch_prob(sd_global, prob, soln, &obj, batch_dual,
 						batch_d, batch_obj);
 			}
@@ -376,31 +300,31 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 
 		/* 2. Generate Omega */
 		soln->omega->k = cell->k;
-      
+
 #ifdef OMEGA_FILE
-      omeg_idx = get_observ(sd_global, soln->omega, prob->num, &new_omega);
+		omeg_idx = get_observ(sd_global, soln->omega, prob->num, &new_omega);
 #else
-      omeg_idx = generate_observ(sd_global, soln->omega, prob->num,
-                                 &new_omega, &(sd_global->config.RUN_SEED));
+		omeg_idx = generate_observ(sd_global, soln->omega, prob->num,
+				&new_omega, &(sd_global->config.RUN_SEED));
 #endif
-      
+
 #ifdef REC_OMEGA
-      int i;
-      /* Yifan 05/10/2012 Scenario Reader */
-      FILE *omg;
-      omg = fopen("sampleOmegas_run", "a");
-      for(i=1; i <= sd_global->omegas.num_omega; i++){
-        /* Note that RT start from 1 but mean start from 0*/
-        fprintf(omg, "%f\t", soln->omega->RT[i]+sd_global->omegas.mean[i-1]);
-      }
-      fprintf(omg, "\n");
-      fclose(omg);
+		int i;
+		/* Yifan 05/10/2012 Scenario Reader */
+		FILE *omg;
+		omg = fopen("sampleOmegas_run", "a");
+		for(i=1; i <= sd_global->omegas.num_omega; i++){
+			/* Note that RT start from 1 but mean start from 0*/
+			fprintf(omg, "%f\t", soln->omega->RT[i]+sd_global->omegas.mean[i-1]);
+		}
+		fprintf(omg, "\n");
+		fclose(omg);
 #endif
 
 #ifdef DEBUG
 		for(idx=0;idx<soln->omega->most;idx++)
-		if (valid_omega_idx(soln->omega, idx))
-		print_omega(soln->omega, prob->num, idx);
+			if (valid_omega_idx(soln->omega, idx))
+				print_omega(soln->omega, prob->num, idx);
 #endif
 
 		cell->k++;
@@ -417,11 +341,11 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 			cplex_err_msg(sd_global, "Subproblem", prob, cell, soln);
 			break;
 		}
-        
-        /* Check the index set of the subproblem updated by Yifan 2014.06.26 */
-        if (TEST_INDEX) {
-            soln->ids->NewIndex = get_index_number(sd_global, prob, cell, soln, omeg_idx);
-        }
+
+		/* Check the index set of the subproblem updated by Yifan 2014.06.26 */
+		if (TEST_INDEX) {
+			soln->ids->NewIndex = get_index_number(sd_global, prob, cell, soln, omeg_idx);
+		}
 
 		/* 4. Enter Feasibility Mode */
 		if (prob->subprob->feaflag == FALSE)
@@ -437,7 +361,7 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 
 		argmax_end = clock();
 		soln->run_time->argmax_iter += ((double) (argmax_end - argmax_start))
-				/ CLOCKS_PER_SEC;
+						/ CLOCKS_PER_SEC;
 
 		++num_subproblems;
 
@@ -545,12 +469,12 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 			}
 		}
 
-/* modified by Yifan 2014.06.17 */
+		/* modified by Yifan 2014.06.17 */
 #if 0
-        FILE *incumb;
-        incumb = fopen("candid_est.txt", "a");
-        fprintf(incumb, "%f\n",soln->candid_est);
-        fclose(incumb);
+		FILE *incumb;
+		incumb = fopen("candid_est.txt", "a");
+		fprintf(incumb, "%f\n",soln->candid_est);
+		fclose(incumb);
 #endif
 
 		write_statistics(sd_global, prob, cell, soln);
@@ -617,25 +541,25 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 			((double)(total_term_time.tms_cutime-total_init_time.tms_cutime))/CLK_TCK,
 			((double)(total_term_time.tms_cstime-total_init_time.tms_cstime))/CLK_TCK);
 #endif
-    
-    
+
+
 #if 0
 
-    /* modified by Yifan 2014.06.17 */
-    /* This part of the code is used for printing the origial LP problem in terms of x */
-    int static idx=0;
+	/* modified by Yifan 2014.06.17 */
+	/* This part of the code is used for printing the origial LP problem in terms of x */
+	int static idx=0;
 	char name[20] = "master   .lp";
-    name[6] = '0' + idx / 10 % 10;
+	name[6] = '0' + idx / 10 % 10;
 	name[7] = '0' + idx / 1 % 10;
-    change_rhs_back(prob, cell, soln);
-    change_bounds_back(prob,cell,soln);
-    /* By setting sigma=0, we destroy the q term */
-    construct_QP(prob, cell, 0);
-    write_prob(cell->master, name);
-    idx++;
-    
+	change_rhs_back(prob, cell, soln);
+	change_bounds_back(prob,cell,soln);
+	/* By setting sigma=0, we destroy the q term */
+	construct_QP(prob, cell, 0);
+	write_prob(cell->master, name);
+	idx++;
+
 #endif
-    
+
 
 	/*  JH summarizing output for Arlie and Brett ... 3/12/98 */
 
@@ -650,12 +574,12 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 			num_subproblems);
 	fprintf(f2_out, "SD Est. Inc. Value: %lf \n", soln->incumb_est);
 	fprintf(f2_out, " total time = %lf \n", soln->run_time->total_time); /*modified by Yifan 10/04/2011*/
-  
-    /* modified by Yifan 2013.06.30 */
-    time_sample = fopen("time_sample.out", "a"); 
-    fprintf(time_sample, "%lf\t%d\n",soln->run_time->total_time,cell->k);
-    fclose(time_sample);
-    
+
+	/* modified by Yifan 2013.06.30 */
+	time_sample = fopen("time_sample.out", "a");
+	fprintf(time_sample, "%lf\t%d\n",soln->run_time->total_time,cell->k);
+	fclose(time_sample);
+
 	for (i = 1; i <= prob->num->mast_cols; ++i)
 		x_k[i] = soln->incumb_x[i];
 
@@ -690,65 +614,65 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 		fprintf(f2_out, "Inc. Value 0.95 CI: [%lf , %lf] \n", conf_int[0],
 				conf_int[1]);
 	}
-  
-  if (prob->current_batch_id == 2) {
-    double spn[3],spn_max;
-    vector *rd;
-    calc_var(sd_global, sd_global->Obj_lb, &(sd_global->obj_mean), &(sd_global->obj_stdev), 3);
-    if (DBL_ABS(sd_global->obj_stdev/sd_global->obj_mean) < sd_global->config.TOLERANCE) {
-      sd_global->obj_flag = 1;
-    }
-    if(!(rd = (vector *) mem_calloc (3, sizeof(vector))))
-      err_msg("Allocation", "solve_cell", "rd");
-    for (i=0; i<3; i++) {
-      rd[i] = arr_alloc(prob->num->mast_cols + 1, double);
-    }
-    
-    /* Calculate the mean solution from first 3 replications */
-    for (i=1; i<=prob->num->mast_cols; i++) {
-      soln->incumb_avg[i]=0.0;
-      for (j=0; j<3; j++) {
-        soln->incumb_avg[i]+=sd_global->batch_incumb->incumb_x[j][i];
-      }
-      soln->incumb_avg[i]/=3.0;
-    }
-    soln->incumb_avg[0] = one_norm(soln->incumb_avg+1, prob->num->mast_cols);
-    
-    for (i = 0 ; i < 3 ; i++) {
-      rdiff(sd_global, sd_global->batch_incumb->incumb_x[i], soln->incumb_avg, prob->num->mast_cols, rd[i]);
-      spn[i] = sup_norm(rd[i], prob->num->mast_cols);
-    }
-    
-    spn_max = spn[0];
-    for (i = 1; i < 3; i++) {
-      if (spn[i] > spn_max)
-        spn_max = spn[i];
-    }
-    
-    for (i = 0; i < 3; i++) {
-      mem_free(rd[i]);
-    }
-    mem_free(rd);
-    
-    if (spn_max < sd_global->config.TOLERANCE) {
-      sd_global->average_flag = 1;
-    }
-    
-  }
-  
-  /* Calculate mean and stdev of early terminated mean solution and print the output */
-  if (prob->current_batch_id == 2 && (sd_global->average_flag == 1 || sd_global->obj_flag == 1 ) && sd_global->config.OVERRIDE == 1) {
-    /* Calculate mean and stdard deviation of duals and reduced costs for mean solution*/
-    calc_mean_stdev(sd_global->batch_incumb->R_Master_pi, soln->R_Master_pi_mean, soln->R_Master_pi_stdev, prob->num->mast_rows, 3);
-    calc_mean_stdev(sd_global->batch_incumb->R_Master_dj, soln->R_Master_dj_mean, soln->R_Master_dj_stdev, prob->num->mast_cols, 3);
-    calc_var(sd_global, sd_global->Obj_lb, &soln->Obj_lb_mean, &soln->Obj_lb_stdev, 3);
-    
-    /* Evaluate the mean solution */
-    sd_global->config.EVAL_SEED1 = prob->eval_seed;
-    evaluate_inc(sd_global, cell, prob, soln, soln->incumb_avg, fname, conf_int, 3);
-    print_detailed_soln(sd_global, soln, prob, fname, 3);
-  }
-  
+
+	if (prob->current_batch_id == 2) {
+		double spn[3],spn_max;
+		vector *rd;
+		calc_var(sd_global, sd_global->Obj_lb, &(sd_global->obj_mean), &(sd_global->obj_stdev), 3);
+		if (DBL_ABS(sd_global->obj_stdev/sd_global->obj_mean) < sd_global->config.TOLERANCE) {
+			sd_global->obj_flag = 1;
+		}
+		if(!(rd = (vector *) mem_calloc (3, sizeof(vector))))
+			err_msg("Allocation", "solve_cell", "rd");
+		for (i=0; i<3; i++) {
+			rd[i] = arr_alloc(prob->num->mast_cols + 1, double);
+		}
+
+		/* Calculate the mean solution from first 3 replications */
+		for (i=1; i<=prob->num->mast_cols; i++) {
+			soln->incumb_avg[i]=0.0;
+			for (j=0; j<3; j++) {
+				soln->incumb_avg[i]+=sd_global->batch_incumb->incumb_x[j][i];
+			}
+			soln->incumb_avg[i]/=3.0;
+		}
+		soln->incumb_avg[0] = one_norm(soln->incumb_avg+1, prob->num->mast_cols);
+
+		for (i = 0 ; i < 3 ; i++) {
+			rdiff(sd_global, sd_global->batch_incumb->incumb_x[i], soln->incumb_avg, prob->num->mast_cols, rd[i]);
+			spn[i] = sup_norm(rd[i], prob->num->mast_cols);
+		}
+
+		spn_max = spn[0];
+		for (i = 1; i < 3; i++) {
+			if (spn[i] > spn_max)
+				spn_max = spn[i];
+		}
+
+		for (i = 0; i < 3; i++) {
+			mem_free(rd[i]);
+		}
+		mem_free(rd);
+
+		if (spn_max < sd_global->config.TOLERANCE) {
+			sd_global->average_flag = 1;
+		}
+
+	}
+
+	/* Calculate mean and stdev of early terminated mean solution and print the output */
+	if (prob->current_batch_id == 2 && (sd_global->average_flag == 1 || sd_global->obj_flag == 1 ) && sd_global->config.OVERRIDE == 1) {
+		/* Calculate mean and stdard deviation of duals and reduced costs for mean solution*/
+		calc_mean_stdev(sd_global->batch_incumb->R_Master_pi, soln->R_Master_pi_mean, soln->R_Master_pi_stdev, prob->num->mast_rows, 3);
+		calc_mean_stdev(sd_global->batch_incumb->R_Master_dj, soln->R_Master_dj_mean, soln->R_Master_dj_stdev, prob->num->mast_cols, 3);
+		calc_var(sd_global, sd_global->Obj_lb, &soln->Obj_lb_mean, &soln->Obj_lb_stdev, 3);
+
+		/* Evaluate the mean solution */
+		sd_global->config.EVAL_SEED1 = prob->eval_seed;
+		evaluate_inc(sd_global, cell, prob, soln, soln->incumb_avg, fname, conf_int, 3);
+		print_detailed_soln(sd_global, soln, prob, fname, 3);
+	}
+
 
 	/* modified by Yifan 2012.09.23 */
 	/* Evaluate batch x and average x of replicatiing x 2012.09.23 */
@@ -772,12 +696,12 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 		fprintf(batch_d, "Incumb_avg - Inc. Value 0.95 CI: [%lf , %lf] \n",
 				conf_int[0], conf_int[1]);
 		fclose(batch_d);
-        
-        /* modified by Yifan 2013.06.30 */
-        time_sample = fopen("time_sample.out", "a");
-        fprintf(time_sample, "Total Time for Compromise Solve: %lf\n",batch_time);
-        fclose(time_sample);
-        
+
+		/* modified by Yifan 2013.06.30 */
+		time_sample = fopen("time_sample.out", "a");
+		fprintf(time_sample, "Total Time for Compromise Solve: %lf\n",batch_time);
+		fclose(time_sample);
+
 		print_detailed_soln(sd_global, soln, prob, fname, 1);
 		print_detailed_soln(sd_global, soln, prob, fname, 2);
 	}
@@ -786,13 +710,13 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 	{
 		print_detailed_soln(sd_global, soln, prob, fname, 0);
 	}
-    
-    /* modified by Yifan 2014.07.30 */
-    /* Let's print out the total number of sigma and lambda */
-    FILE *pi_count;
-    pi_count = fopen("pi_count.out", "a");
-    fprintf(pi_count, "sigma_cnt=:%d\tlambda_cnt=%d\n",cell->sigma->cnt, cell->lambda->cnt);
-    fclose(pi_count);
+
+	/* modified by Yifan 2014.07.30 */
+	/* Let's print out the total number of sigma and lambda */
+	FILE *pi_count;
+	pi_count = fopen("pi_count.out", "a");
+	fprintf(pi_count, "sigma_cnt=:%d\tlambda_cnt=%d\n",cell->sigma->cnt, cell->lambda->cnt);
+	fclose(pi_count);
 
 #ifdef DEBUG
 	printf(" Ending Summary \n");
@@ -806,14 +730,14 @@ void solve_cell(sdglobal_type* sd_global, cell_type *cell, prob_type *prob,
 	fclose(obj_file);
 	fclose(time_file);
 
-    printf("\nTotal Number of Index Found: %d \n", soln->ids->cnt);
+	printf("\nTotal Number of Index Found: %d \n", soln->ids->cnt);
 	free_subprob(cell->subprob);
 	free_master(cell->master);
 	free_soln(prob, cell, soln);
 }
 
 /************************************************************************\
-** This function creates a brand spankin new cell structure.
+ ** This function creates a brand spankin new cell structure.
  ** By that I mean that the structures within the cell, like
  ** lambda, sigma, and cuts, do not have any data already initialized.
  ** For a single cell problem, or for first generation ancestors,
@@ -870,50 +794,26 @@ cell_type *new_cell(sdglobal_type* sd_global, prob_type *p, int id_num)
 }
 
 /************************************************************************\
-** This function releases all the memory reserved for the cell
+ ** This function releases all the memory reserved for the cell
  ** data structure, including the cel itself.
  \************************************************************************/
-void free_cell(cell_type *c, num_type *num)
-{
+void free_cell(cell_type *c, num_type *num) {
 
-#ifdef TRACE
-	printf("Inside free_cell\n");
-#endif
-
-#if 0
-	printf("c->lambda->cnt is : %d\n",c->lambda->cnt);
-	printf("c->sigma->cnt is : %d\n",c->sigma->cnt);
-	printf("c->theta->cnt is : %d\n",c->theta->cnt);
-	printf("c->feasible_lambda->cnt is : %d\n",c->feasible_lambda->cnt);
-	printf("c->feasible_sigma->cnt is : %d\n",c->feasible_sigma->cnt);
-	printf("c->feasible_theta->cnt is : %d\n",c->feasible_theta->cnt);
-#endif
 	/* Avoid freeing the cuts structure for compromise problem Yifan 2013/01/17 */
-	//free_cuts(c->cuts);
 	free_lambda(c->lambda);
 	free_sigma(c->sigma);
 	free_theta(c->theta);
 
-	/* modified by Yifan 2013.05.05 */
-	/* Yifan 03/04/2012 Updated for Feasibility Cuts*/
-	/* free_cuts(c->feasible_cuts_pool); */
-	/* modified by Yifan 2013.04.15 */
-	//free_cuts(c->feasible_cuts_added);
-	/* Yifan 03/11/12 Since feasible cuts added are cuts_type pointers*/
-	/* mem_free(c->feasible_cuts_added->val);
-	 mem_free(c->feasible_cuts_added);*/
-
 	free_lambda(c->feasible_lambda);
 	free_sigma(c->feasible_sigma);
 	free_theta(c->feasible_theta);
-	/* Yifan 03/04/2012 Updated for Feasibility Cuts*/
 
 	mem_free(c->members);
 	mem_free(c);
 }
 
 /************************************************************************\
-** This function prints out the contents of a cell to a file.  This 
+ ** This function prints out the contents of a cell to a file.  This
  ** essentially includes lambda, sigma, and the cuts, as well as the
  ** counters N, k, the cell's number id_num, and the probability P.
  \************************************************************************/

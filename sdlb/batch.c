@@ -484,42 +484,32 @@ void update_batch_bounds(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 #endif
 }
 
-batch_incumb_type * new_batch_incumb(sdglobal_type* sd_global, prob_type *p,
-		vector x_k)
-{
+batch_incumb_type * new_batch_incumb(sdglobal_type* sd_global, prob_type *p, vector x_k) {
 
 	/* Remeber to release memory allocated here!!! */
 	int idx;
-	if (!(sd_global->batch_incumb =
-			(batch_incumb_type *) mem_malloc (sizeof(batch_incumb_type))))
+	if (!(sd_global->batch_incumb = (batch_incumb_type *) mem_malloc (sizeof(batch_incumb_type))))
 		err_msg("Allocation", "new_batch_incumb", "batch_incumb");
 
-	if (!(sd_global->batch_incumb->incumb_x =
-			(vector *) mem_calloc (BATCH_SIZE, sizeof(vector))))
+	if (!(sd_global->batch_incumb->incumb_x = (vector *) mem_calloc (BATCH_SIZE, sizeof(vector))))
 		err_msg("Allocation", "incumb_x", "batch_incumb");
 
-	for (idx = 0; idx < BATCH_SIZE; idx++)
-	{
-		sd_global->batch_incumb->incumb_x[idx] = duplic_arr(x_k,
-				p->num->mast_cols);
+	for (idx = 0; idx < BATCH_SIZE; idx++) {
+		sd_global->batch_incumb->incumb_x[idx] = duplic_arr(x_k, p->num->mast_cols);
 	}
 
 	/* modified by Yifan 2012.10.05 */
 	if (!(sd_global->batch_incumb->R_Master_pi =
 			(vector *) mem_calloc (BATCH_SIZE, sizeof(vector))))
 		err_msg("Allocation", "new_soln", "Batch_pi");
-	for (idx = 0; idx < BATCH_SIZE; idx++)
-	{
-		sd_global->batch_incumb->R_Master_pi[idx] =
-				arr_alloc(p->num->mast_rows+p->num->max_cuts+1,double);
+	for (idx = 0; idx < BATCH_SIZE; idx++) {
+		sd_global->batch_incumb->R_Master_pi[idx] = arr_alloc(p->num->mast_rows+p->num->max_cuts+1,double);
 	}
 	if (!(sd_global->batch_incumb->R_Master_dj =
 			(vector *) mem_calloc (BATCH_SIZE, sizeof(vector))))
 		err_msg("Allocation", "new_soln", "Batch_pi");
-	for (idx = 0; idx < BATCH_SIZE; idx++)
-	{
-		sd_global->batch_incumb->R_Master_dj[idx] =
-				arr_alloc(p->num->mast_cols+2,double);
+	for (idx = 0; idx < BATCH_SIZE; idx++) {
+		sd_global->batch_incumb->R_Master_dj[idx] = arr_alloc(p->num->mast_cols+2,double);
 	}
 
 	return sd_global->batch_incumb;

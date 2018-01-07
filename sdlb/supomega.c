@@ -253,16 +253,11 @@ void sort_omegas(sdglobal_type* sd_global, sd_small col)
                 }
             }
             if (min_idx != i) {
-                swap(sd_global->omegas.col[i], sd_global->omegas.col[min_idx],
-                     itemp);
-                swap(sd_global->omegas.row[i], sd_global->omegas.row[min_idx],
-                     itemp);
-                swap(sd_global->omegas.num_vals[i],
-                     sd_global->omegas.num_vals[min_idx], itemp);
-                swap(sd_global->omegas.omega_vals[i],
-                     sd_global->omegas.omega_vals[min_idx], dptemp);
-                swap(sd_global->omegas.omega_probs[i],
-                     sd_global->omegas.omega_probs[min_idx], dptemp);
+                swap(sd_global->omegas.col[i], sd_global->omegas.col[min_idx], itemp);
+                swap(sd_global->omegas.row[i], sd_global->omegas.row[min_idx], itemp);
+                swap(sd_global->omegas.num_vals[i], sd_global->omegas.num_vals[min_idx], itemp);
+                swap(sd_global->omegas.omega_vals[i], sd_global->omegas.omega_vals[min_idx], dptemp);
+                swap(sd_global->omegas.omega_probs[i], sd_global->omegas.omega_probs[min_idx], dptemp);
             }
         }
     }

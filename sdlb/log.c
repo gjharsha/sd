@@ -87,25 +87,9 @@ void *log_realloc(char *string, void *free_ptr, void *alloc_ptr, int size)
  ** alloc and the free log files.  It assumes the global variables
  ** fptrALLOC and fptrFREE have been defined somewhere.
  \*************************************************************************/
-void log_start(sdglobal_type* sd_global)
-{
-#ifdef WRITE
-	FILE *fptr;
-#endif
-	 /*sd_global->fptrALLOC = fopen("alloc.log", "w");
-	 sd_global->fptrFREE  = fopen("free.log", "w");*/
-
+void log_start(sdglobal_type* sd_global) {
 	MEM_USED = 0;
 	sd_global->LAST_CLOCK = clock();
-
-#ifdef WRITE
-	/* Erase any previous data files */
-	fptr = fopen(ITER_DAT, "w");
-	fclose(fptr);
-
-	fptr = fopen(CNT_DAT, "w");
-	fclose(fptr);
-#endif
 
 }
 

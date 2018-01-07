@@ -54,7 +54,7 @@ void getnamespace(one_problem *, int *, int *, int, int); /* 2011.10.30 */
  **
  \**********************************************************************/
 
-int load_stoch(sdglobal_type* sd_global, one_problem *, identity *, char *);
+int load_stoch(sdglobal_type *SDglobal, one_problem *original, identity *ident, char *fname);
 
 /**********************************************************************\
 **   The function load_time receives pointers to smalls and a pointer
@@ -71,7 +71,7 @@ int load_config(sdglobal_type* sd_global, BOOL read_seeds, BOOL read_iters);
  ** and providing observations of omega.
  \**********************************************************************/
 void free_ident(identity *);
-void free_omegas(sdglobal_type* sd_global);
+void free_omegas(sdglobal_type *SDglobal);
 
 /**********************************************************************\
 **  The function str_to_float converts a string passed to it as an

@@ -88,16 +88,11 @@ int *find_rows(int num_elem, int *num_rows, int *omega_row,int *omega_col, int m
  ** compare it with the most recent element.  It returns the resulting
  ** array.  These columns will become the coordinates of Pi x Tomega.
  \***********************************************************************/
-int *find_cols(int num_elem, int *num_cols, int *omega_col, int mast_col)
-{
+int *find_cols(int num_elem, int *num_cols, int *omega_col, int mast_col) {
 	int *rv_col;
 	int i;
 	int len;
 	int last;
-
-#ifdef TRACE
-	printf("Inside find_cols\n");
-#endif
 
 	len = 0;
 	if (!(rv_col = arr_alloc(num_elem+1, int)))
@@ -208,7 +203,7 @@ soln_type * new_soln(sdglobal_type* sd_global, prob_type *p, vector x_k)
 	length = p->num->iter + p->num->iter / p->tau + 1;
 	s->omega = new_omega(p->num->iter, p->num->rv, p->coord);
     s->ids = new_ids(p->num->iter,p->num->sub_cols, p->num->sub_rows, p->num->rv_g);
-    s->rcdata = new_rcdata(p->num->sub_rows, p->num->rv_g, s->ids->num_word);
+    s->rcdata = new_rcdata(p->num->sub_cols, p->num->rv_g, s->ids->num_word);
     
 	s->delta = new_delta(length, p->coord);
 
@@ -495,7 +490,7 @@ int print_detailed_soln(sdglobal_type* sd_global, soln_type *s, prob_type *p,
 	FILE *fp;
 	char fp_fname[NAME_SIZE * 2];
 	int i, soln_status = 0, report_average = 0;
-	double mean, ll, ul;
+	double mean = 0.0, ll, ul;
 	vector A_x;
 	vector x;
 	vector pi_mean;
@@ -596,6 +591,7 @@ int print_detailed_soln(sdglobal_type* sd_global, soln_type *s, prob_type *p,
 		}
 		else
 		{
+			mean = 0;
 			soln_status = 0;
 			return 1;
 		}

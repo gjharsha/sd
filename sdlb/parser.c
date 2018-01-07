@@ -34,10 +34,8 @@
  **	function then returns control to the calling function.
  \*************************************************************************/
 
-int get_line(FILE **input, char *field1, char *field2, char *field3,
-		char *field4, char *field5, char *field6, char *field7, char *type)
-{
-	char input_str[100], *strptr;
+int get_line(FILE **input, char *field1, char *field2, char *field3, char *field4, char *field5, char *field6, char *field7, char *type) {
+	char input_str[512], *strptr;
 	int num_fields, i;
     sd_long len;
 
@@ -48,14 +46,11 @@ int get_line(FILE **input, char *field1, char *field2, char *field3,
 	input_str[0] = '*';
 
 	/*  test for and skip over empty lines and comments  */
-	while (len <= 1 || input_str[0] == '*')
-	{
+	while (len <= 1 || input_str[0] == '*') {
 		strptr = fgets(input_str, 100, *input);
-		if (strptr == NULL)
-		{
+		if (strptr == NULL) {
 			return 0;
 		}
-
 		len = strlen(input_str);
 	}
 
@@ -283,16 +278,13 @@ int title(char *input_str, char *field1, char *field2)
  **	values.
  \******************************************************************/
 
-void remove_spaces(char *field)
-{
+void remove_spaces(char *field) {
 	char *p, *q;
 
 	p = field;
 	q = p;
-	while (*p != '\0' && *p != '\n')
-	{
-		if (*p >= 33)
-		{
+	while (*p != '\0' && *p != '\n') {
+		if (*p >= 33) {
 			*q++ = *p++;
 		}
 		else

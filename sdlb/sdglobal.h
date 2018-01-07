@@ -326,35 +326,34 @@ typedef struct
 	cut_type **batch;
 } batch_cut_type, *bcuts_ptr;
 
-typedef struct
-{
+typedef struct {
 	config_type config;
 	omegastuff omegas;
     omegastuff_block blocks;
 	one_problem * batch_problem;
-	int MALLOC;
 	batch_incumb_type *batch_incumb;
-	vector Obj_lb;
-	vector quad_v;
 	batch_cut_type *bcuts;
 	batch_cut_type *bfcuts;
 	batch_cut_type *bfcuts_pool;
+	vector Obj_lb;
+	vector quad_v;
+	vector Bbar;
+	int MALLOC;
+    int average_flag;
+    int obj_flag;
+    double obj_mean;
+    double obj_stdev;
+	double Abar;
 	double ck[BATCH_SIZE];
 	double Eta0;
+    BOOL store_flag;
+    BOOL pi_flag[3];
+    BOOL resume_flag;
 	FILE *fptrALLOC;
 	FILE *fptrFREE;
     FILE *fptrOMEGA;
 	sd_long MEM_USED;
 	clock_t LAST_CLOCK;
-	double Abar;
-	vector Bbar;
-    int average_flag;
-    int obj_flag;
-    double obj_mean;
-    double obj_stdev;
-    BOOL store_flag;
-    BOOL pi_flag[3];
-    BOOL resume_flag;
 } sdglobal_type;
 
 #endif /* SDGLOBAL_H_ */

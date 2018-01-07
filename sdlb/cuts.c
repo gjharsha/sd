@@ -1,5 +1,5 @@
 /***********************************************************************\
-**
+ **
  ** cuts.c
  **
  **
@@ -77,7 +77,7 @@
  */
 
 /***********************************************************************\
-** Once an observation of omega has been generated and the
+ ** Once an observation of omega has been generated and the
  ** corresponding subproblem has been solved, a new cut may
  ** be formed for the master problem.  This function will
  ** update all the data (concerning omega and the dual vector)
@@ -88,7 +88,7 @@ void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 		soln_type *s, int omeg_idx, BOOL new_omega)
 {
 	one_cut *cut;
-    
+
 #ifdef DEBUG
 	int idx;
 #endif
@@ -103,17 +103,16 @@ void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 			p->num, p->Rbar, p->Tbar, c->subprob, s->Pi, omeg_idx, new_omega);
 
 	SD_cut(sd_global, p, c, s, c->sigma, s->delta, s->omega, p->num, cut, s->candid_x,
-			s->pi_ratio, s->max_ratio, s->min_ratio, c->k,
-			s->dual_statble_flag);
-    
-    add_cut(sd_global, cut, p, c, s);
+			s->pi_ratio, s->max_ratio, s->min_ratio, c->k, s->dual_statble_flag);
+
+	add_cut(sd_global, cut, p, c, s);
 
 	/* Print all the cuts after adding a cut, for the purpose of cut index
 	 checking. zl 
 
 	 print_cut_info(c, p->num, "After adding a cut.");  
 	 */
-    
+
 
 #ifdef RUN
 	/*
@@ -144,7 +143,7 @@ void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 #ifdef DEBUG
 	for(idx=0;idx<c->cuts->cnt;idx++)
-	print_cut(c->cuts, p->num, idx);
+		print_cut(c->cuts, p->num, idx);
 	printf("\n");
 #endif
 
@@ -177,12 +176,12 @@ void form_fea_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	FEA_cut(sd_global, c, s, c->feasible_sigma, s->feasible_delta, s->omega,
 			p->num, s->omega->most, s->dual_statble_flag, new_omega, new_sigma);
 
-//	cut_cnt_pool = c->feasible_cuts_pool->cnt;
+	//	cut_cnt_pool = c->feasible_cuts_pool->cnt;
 
 #ifdef DEBUG
 	printf("cut_cnt_pool is %d\n",cut_cnt_pool);
 	for(idx=0; idx < c->feasible_cuts_pool->cnt; idx++)
-	print_cut(c->feasible_cuts_pool, p->num, idx);
+		print_cut(c->feasible_cuts_pool, p->num, idx);
 	printf("\n");
 #endif
 
@@ -193,7 +192,7 @@ void form_fea_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 #ifdef DEBUG
 	printf("cut_cnt_added is %d\n",cut_cnt_added);
 	for(idx=0; idx < c->feasible_cuts_added->cnt; idx++)
-	print_cut(c->feasible_cuts_added, p->num, idx);
+		print_cut(c->feasible_cuts_added, p->num, idx);
 	printf("\n");
 #endif
 
@@ -224,7 +223,7 @@ void update_dual_size(cell_type *c, soln_type *s, prob_type *p)
 }
 
 /***********************************************************************\
-** As iterations proceed, the cut which was formed based on the
+ ** As iterations proceed, the cut which was formed based on the
  ** incumbent X vector is periodically re-evaluated.  If tau iterations
  ** have passed since the last update, then the cut is reformed.  Or,
  ** if the value of the incumbent cut is less than the value of f_k
@@ -256,7 +255,7 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	 int		best;
 	 double	object_est;
 	 double	incumb_est;
-	 
+
 	 object_est = f_k(s->incumb_x, p->c, c->cuts, c->theta, p->num, c, &best);
 	 incumb_est = cut_height(c->cuts->val[s->incumb_cut], s->incumb_x, c, p->num);
 	 incumb_est += CxX(p->c, s->incumb_x, p->num->mast_cols);
@@ -283,11 +282,11 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	{
 
 		solve_subprob(sd_global, p, c, s, s->incumb_x, omeg_idx);
-        
-        /* modified by Yifan 2014.06.11 */
-        if (TEST_INDEX) {
-            s->ids->NewIndex = get_index_number(sd_global, p, c, s, omeg_idx);
-        }
+
+		/* modified by Yifan 2014.06.11 */
+		if (TEST_INDEX) {
+			s->ids->NewIndex = get_index_number(sd_global, p, c, s, omeg_idx);
+		}
 
 		/* Record time spent on argmax procedures without counting the time
 		 on solving the subproblem LP. zl, 06/30/04. */
@@ -331,7 +330,7 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 			/* zl, 06/30/04. */
 			end = clock();
 			s->run_time->argmax_iter += ((double) (end - start))
-					/ CLOCKS_PER_SEC;
+							/ CLOCKS_PER_SEC;
 
 			/*added to record subproblem objective estimate by Yifan 02/01/12*/
 			//s->subobj_est[c->k] = cut->alpha - CxX(cut->beta, s->incumb_x, p->num->mast_cols);
@@ -363,7 +362,7 @@ void decrease_feacut_rownum(cell_type *c)
 }
 
 /***********************************************************************\
-** This function updates all the structures necessary for forming
+ ** This function updates all the structures necessary for forming
  ** a stochastic cut.  The latest observation of omega and the latest
  ** dual solution to the subproblem are added to their appropriate
  ** structures.  Then Pi x R and Pi x T are computed and for the latest
@@ -398,10 +397,10 @@ BOOL stochastic_updates(sdglobal_type* sd_global, cell_type *c, soln_type *s,
 	/* Retrieve the dual solution from the latest subproblem */
 	get_dual(Pi, subprob, num, num->sub_rows);
 
-    /* If random cost exists and it will affect the dual solution, then we need to calculate Nu */
-    if (num->rv_g) {
-        adjust_dual_solution(Pi, num, s->ids->index[s->ids->current_index_idx]);
-    }
+	/* If random cost exists and it will affect the dual solution, then we need to calculate Nu */
+	if (num->rv_g) {
+		adjust_dual_solution(Pi, num, s->ids->index[s->ids->current_index_idx]);
+	}
 
 #ifdef RUN
 	/*
@@ -414,60 +413,60 @@ BOOL stochastic_updates(sdglobal_type* sd_global, cell_type *c, soln_type *s,
 	print_vect(Pi, num->sub_rows, "Dual vector");
 	printf("\n");
 #endif
-/* For "Nu" calculation (or "Pi" in case of no random cost ) If an old 
+	/* For "Nu" calculation (or "Pi" in case of no random cost ) If an old
     index set shows up, then simply skip the lambda and sigma calculation */
-    if (s->ids->NewIndex) {
-        lamb_idx = calc_lambda(sd_global, lambda, num, Pi, &new_lamb);
-        s->ids->lam_idx[s->ids->current_index_idx] = lamb_idx;
-        
-        // new_Mu???????????  added by Yifan to find out whether a new Mu has been generated!
-        
-        /* Do this afterwards because you need to have index to lambda */
-        /* This indicates that the sigma identified here */
-        /* is associated with the s->ids->cnt index */
-        s->ids->sig_idx[s->ids->current_index_idx] = calc_sigma(sd_global, c, sigma, num, Pi, Rbar, Tbar, lamb_idx, new_lamb,
-                                                                &new_sigma);
-        if (sd_global->MALLOC)
-        {
-            printf("After return from sigma\n");
-            /* malloc_verify(); */
-        }
-        
-        /* Only need to calculate row if a distinct lambda was found */
-        /* We could use Pi, instead of lambda(Pi), for this calculation, */
-        /* and save the time for expanding/reducing vector.  But for clarity... */
-        
-        /*Commented by Yifan: even though the lambda is the same, the current Pi might be a
-         distinct one due to the variations in sigma*/
-        if (new_lamb)
-            calc_delta_row(sd_global, delta, lambda, omega, num, lamb_idx);
-        
-        /* If random cost exits and phi show up for the current index */
-        /* Then store all the phi's associate with this index similar */
-        /* to a dual mutiplier. Think of nu and phi's as a general representation */
-        /* of the dual mutiplier */
-        if (num->rv_g && s->ids->index[s->ids->current_index_idx]->phi_cnt){
-            put_phi_into_sigma_delta(sd_global, c, s, lambda, sigma, delta, omega, num, Rbar, Tbar, s->ids->index[s->ids->current_index_idx]);
-        }
+	if (s->ids->NewIndex) {
+		lamb_idx = calc_lambda(sd_global, lambda, num, Pi, &new_lamb);
+		s->ids->lam_idx[s->ids->current_index_idx] = lamb_idx;
 
-    }
-    
+		// new_Mu???????????  added by Yifan to find out whether a new Mu has been generated!
+
+		/* Do this afterwards because you need to have index to lambda */
+		/* This indicates that the sigma identified here */
+		/* is associated with the s->ids->cnt index */
+		s->ids->sig_idx[s->ids->current_index_idx] = calc_sigma(sd_global, c, sigma, num, Pi, Rbar, Tbar, lamb_idx, new_lamb,
+				&new_sigma);
+		if (sd_global->MALLOC)
+		{
+			printf("After return from sigma\n");
+			/* malloc_verify(); */
+		}
+
+		/* Only need to calculate row if a distinct lambda was found */
+		/* We could use Pi, instead of lambda(Pi), for this calculation, */
+		/* and save the time for expanding/reducing vector.  But for clarity... */
+
+		/*Commented by Yifan: even though the lambda is the same, the current Pi might be a
+         distinct one due to the variations in sigma*/
+		if (new_lamb)
+			calc_delta_row(sd_global, delta, lambda, omega, num, lamb_idx);
+
+		/* If random cost exits and phi show up for the current index */
+		/* Then store all the phi's associate with this index similar */
+		/* to a dual mutiplier. Think of nu and phi's as a general representation */
+		/* of the dual mutiplier */
+		if (num->rv_g && s->ids->index[s->ids->current_index_idx]->phi_cnt){
+			put_phi_into_sigma_delta(sd_global, c, s, lambda, sigma, delta, omega, num, Rbar, Tbar, s->ids->index[s->ids->current_index_idx]);
+		}
+
+	}
+
 #ifdef DEBUG
-    int idx, obs;
-    for(idx=0;idx<lambda->cnt;idx++)
-	for(obs=0;obs<omega->most;obs++)
-	if (valid_omega_idx(omega, obs))
-	print_delta(delta, num, idx, obs);
+	int idx, obs;
+	for(idx=0;idx<lambda->cnt;idx++)
+		for(obs=0;obs<omega->most;obs++)
+			if (valid_omega_idx(omega, obs))
+				print_delta(delta, num, idx, obs);
 
 	for(idx=0;idx<lambda->cnt;idx++)
-	print_lambda(lambda, num, idx);
+		print_lambda(lambda, num, idx);
 
 	for(obs=0;obs<omega->most;obs++)
-	if (valid_omega_idx(omega, obs))
-	print_omega(omega, num, obs);
+		if (valid_omega_idx(omega, obs))
+			print_omega(omega, num, obs);
 
 	for(idx=0;idx<sigma->cnt;idx++)
-	print_sigma(sigma, num, idx);
+		print_sigma(sigma, num, idx);
 #endif
 
 	return new_sigma;
@@ -477,7 +476,7 @@ BOOL stochastic_updates(sdglobal_type* sd_global, cell_type *c, soln_type *s,
 /* Yifan 03/04/2012 Updated for Feasibility Cuts*/
 
 /***********************************************************************\
-** This function creates a new cut for the master program based on
+ ** This function creates a new cut for the master program based on
  ** all of the observed outcomes of omega and on all the previous
  ** dual solutions to the subproblem.  It also uses some given
  ** solution to the master program (X).  For each outcome observed, the
@@ -496,7 +495,7 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 {
 	int c, cnt;
 	int obs; /* Observation of omega being used */
-    int start_position;
+	int start_position;
 	i_type istar; /* Index to optimizing Pi's */
 	vector pi_Tbar_x; /* Array of PixTbarxX scalars for all Pi */
 	BOOL pi_eval_flag = FALSE; /*TRUE for testing the impact of the new PI's */
@@ -507,17 +506,17 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 	double argmax_dif_sum = 0;
 	double argmax_all_sum = 0;
 	double vari = 1.0;
-    double temp_max = -10^20;
-    int scan_len[3];
+	double temp_max = -10^20;
+	int scan_len[3];
 	i_type istar_new;
 	i_type istar_old;
 	FILE *fptr;
 #ifdef RECOURSE_OBJ
 	FILE *subobj_ptr; /* by Yifan 02/02/12 */
 #endif
-    scan_len[0] = 64;
-    scan_len[1] = 256;
-    scan_len[2] = 512;
+	scan_len[0] = 64;
+	scan_len[1] = 256;
+	scan_len[2] = 512;
 #ifdef TRACE
 	printf("Inside SD_cut\n");
 #endif
@@ -550,8 +549,8 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 	/* Need to store  Pi x Tbar x X independently of observation loop */
 	if (!(pi_Tbar_x = arr_alloc(sigma->cnt, double)))
 		err_msg("Allocation", "SD_cut", "pi_Tbar_x");
-    
-    
+
+
 	/* Calculate (Pi x Tbar) x X by mult. each VxT by X, one at a time */
 	for (cnt = 0; cnt < sigma->cnt; cnt++)
 	{
@@ -561,7 +560,7 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 	}
 
 	/* Assume the cut's fields were initialized to zero.  */
-    temp_max = 0.0;
+	temp_max = 0.0;
 	/* Yifan 03/20/2012 Test for omega issues*/
 	for (obs = 0; obs < omega->most; obs++)
 		if (valid_omega_idx(omega, obs))
@@ -573,74 +572,74 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 				//istar = compute_istar(obs, cut, sigma, delta, Xvect, num, pi_Tbar_x, argmax_all, FALSE, num_samples);
 				//printf("This is argmax OSD for obs %d : %f and istar(%d,%d)\n", obs, *argmax_all, istar.sigma, istar.delta);
 
-                /* Testing the index argmax, use index for argmax only when random cost coefficients show up*/
-                if (TEST_INDEX && num->rv_g) {
-                    /* modified by Yifan 2014.07.30 */
-                    istar_old = compute_istar_index(sd_global, soln, obs, cut, sigma, delta, Xvect, num,
-                                                    pi_Tbar_x, argmax_old, pi_eval_flag, num_samples);
-                    istar_new = compute_new_istar_index(sd_global, soln, obs, cut, sigma, delta, Xvect,
-                                                    num, pi_Tbar_x, argmax_new, num_samples);
-                }
-                else{
-                    istar_old = compute_istar(obs, cut, sigma, delta, Xvect, num,
-                                                    pi_Tbar_x, argmax_old, pi_eval_flag, num_samples);
-                    istar_new = compute_new_istar(obs, cut, sigma, delta, Xvect,
-                                                    num, pi_Tbar_x, argmax_new, num_samples);
-                }
-                
-                
+				/* Testing the index argmax, use index for argmax only when random cost coefficients show up*/
+				if (TEST_INDEX && num->rv_g) {
+					/* modified by Yifan 2014.07.30 */
+					istar_old = compute_istar_index(sd_global, soln, obs, cut, sigma, delta, Xvect, num,
+							pi_Tbar_x, argmax_old, pi_eval_flag, num_samples);
+					istar_new = compute_new_istar_index(sd_global, soln, obs, cut, sigma, delta, Xvect,
+							num, pi_Tbar_x, argmax_new, num_samples);
+				}
+				else{
+					istar_old = compute_istar(obs, cut, sigma, delta, Xvect, num,
+							pi_Tbar_x, argmax_old, pi_eval_flag, num_samples);
+					istar_new = compute_new_istar(obs, cut, sigma, delta, Xvect,
+							num, pi_Tbar_x, argmax_new, num_samples);
+				}
+
+
 				if (*argmax_new > *argmax_old)
 				{
 					*argmax_all = *argmax_new;
 					istar.sigma = istar_new.sigma;
 					istar.delta = istar_new.delta;
-                    istar.index_idx = istar_new.index_idx;
+					istar.index_idx = istar_new.index_idx;
 				}
 				else
 				{
 					*argmax_all = *argmax_old;
 					istar.sigma = istar_old.sigma;
 					istar.delta = istar_old.delta;
-                    istar.index_idx = istar_old.index_idx;
+					istar.index_idx = istar_old.index_idx;
 				}
-                
-                if (*argmax_all > temp_max) {
-                    temp_max = *argmax_all;
-                }
+
+				if (*argmax_all > temp_max) {
+					temp_max = *argmax_all;
+				}
 				//printf("argmax:%f and finalistar(%d,%d) and ck %d\n",*argmax_all, istar.sigma, istar.delta, sigma->ck[istar.sigma]);
 				/* modified by Yifan 2013.02.15 */
 
 				/* argmax_dif_sum += *argmax_all*omega->weight[obs] - max(*argmax_old*omega->weight[obs],0);
-				 
+
 				 argmax_all_sum += *argmax_all*omega->weight[obs];*//* modified by Yifan 2013.05.12 */
 				/* If Eta0=0, the above code works fine. But if Eta0<0, then we need to calculate the following way */
 				argmax_dif_sum += max((*argmax_old-sd_global->Eta0),0)
-						* omega->weight[obs];
+								* omega->weight[obs];
 				argmax_all_sum += max((*argmax_all-sd_global->Eta0),0)
-						* omega->weight[obs];
+								* omega->weight[obs];
 
 				// printf("This is argmax NSD for obs %d : %f and istar(%d,%d) and sigma from %d iteration \n", obs, *argmax_all, istar.sigma, istar.delta, sigma->ck[istar.sigma]);
 			}
 			else{
-                /* Testing the index argmax, use index for argmax only when random cost coefficients show up*/
-                if (TEST_INDEX && num->rv_g) {
-                    /* modified by Yifan 2014.07.30 */
-                    istar = compute_istar_index(sd_global, soln, obs, cut, sigma, delta, Xvect, num,
-                                                pi_Tbar_x, argmax_all, pi_eval_flag, num_samples);
-                }
-                else{
-                    istar = compute_istar(obs, cut, sigma, delta, Xvect, num,
-                                          pi_Tbar_x, argmax_all, pi_eval_flag, num_samples);
-                }
+				/* Testing the index argmax, use index for argmax only when random cost coefficients show up*/
+				if (TEST_INDEX && num->rv_g) {
+					/* modified by Yifan 2014.07.30 */
+					istar = compute_istar_index(sd_global, soln, obs, cut, sigma, delta, Xvect, num,
+							pi_Tbar_x, argmax_all, pi_eval_flag, num_samples);
+				}
+				else{
+					istar = compute_istar(obs, cut, sigma, delta, Xvect, num,
+							pi_Tbar_x, argmax_all, pi_eval_flag, num_samples);
+				}
 
-                
-                if (*argmax_all > temp_max) {
-                    temp_max = *argmax_all;
-                }
-            }
-            
+
+				if (*argmax_all > temp_max) {
+					temp_max = *argmax_all;
+				}
+			}
+
 			cut->istar[obs] = istar.sigma;
-            cut->istar_index[obs] = istar.index_idx;
+			cut->istar_index[obs] = istar.index_idx;
 
 			/* by Yifan 02/02/12 */
 			if (cut->is_incumbent)
@@ -655,11 +654,11 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 
 				for (c = 1; c <= num->rv_cols; c++)
 					beta[delta->col[c]] += delta->val[istar.delta][obs].T[c];
-                
-                if (num->rv_g && soln->ids->index[istar.index_idx]->phi_cnt) {
-                    get_cost_val(sd_global, soln->omega, num, soln->ids->index[istar.index_idx], soln->ids->random_cost_val, soln->ids->random_cost_col, obs);
-                    adjust_incumbent_height(soln, obs, cut, beta, sigma, delta, omega, num, soln->ids->index[istar.index_idx]);
-                }
+
+				if (num->rv_g && soln->ids->index[istar.index_idx]->phi_cnt) {
+					get_cost_val(sd_global, soln->omega, num, soln->ids->index[istar.index_idx], soln->ids->random_cost_val, soln->ids->random_cost_col, obs);
+					adjust_incumbent_height(soln, obs, cut, beta, sigma, delta, omega, num, soln->ids->index[istar.index_idx]);
+				}
 
 				cut->subobj_omega[obs] -= CxX(beta, Xvect, num->mast_cols);
 
@@ -677,74 +676,74 @@ void SD_cut(sdglobal_type* sd_global,prob_type *prob, cell_type *cell, soln_type
 
 			for (c = 1; c <= num->nz_cols; c++)
 				cut->beta[sigma->col[c]] += sigma->val[istar.sigma].T[c]
-						* omega->weight[obs];
+																	  * omega->weight[obs];
 			for (c = 1; c <= num->rv_cols; c++)
 				cut->beta[delta->col[c]] += delta->val[istar.delta][obs].T[c]
-						* omega->weight[obs];
-            
-            if (num->rv_g && soln->ids->index[istar.index_idx]->phi_cnt) {
-                get_cost_val(sd_global, soln->omega, num, soln->ids->index[istar.index_idx], soln->ids->random_cost_val, soln->ids->random_cost_col, obs);
-                adjust_alpha_value(soln, obs, cut, sigma, delta, omega, num, soln->ids->index[istar.index_idx], omega->weight[obs]);
-                adjust_beta_value(soln, obs, cut, sigma, delta, omega, num, soln->ids->index[istar.index_idx], omega->weight[obs]);
-            }
+																		   * omega->weight[obs];
+
+			if (num->rv_g && soln->ids->index[istar.index_idx]->phi_cnt) {
+				get_cost_val(sd_global, soln->omega, num, soln->ids->index[istar.index_idx], soln->ids->random_cost_val, soln->ids->random_cost_col, obs);
+				adjust_alpha_value(soln, obs, cut, sigma, delta, omega, num, soln->ids->index[istar.index_idx], omega->weight[obs]);
+				adjust_beta_value(soln, obs, cut, sigma, delta, omega, num, soln->ids->index[istar.index_idx], omega->weight[obs]);
+			}
 
 		}
-    
-    soln->a = 0.0;
-    soln->b = temp_max;
-    soln->lipschitz_lambda = 1.0/cell->k;
-    soln->hoeff_prob = 2*exp((-2*pow(sd_global->config.TOLERANCE,2))/(soln->lipschitz_lambda*pow(soln->b, 2)));
-    
+
+	soln->a = 0.0;
+	soln->b = temp_max;
+	soln->lipschitz_lambda = 1.0/cell->k;
+	soln->hoeff_prob = 2*exp((-2*pow(sd_global->config.TOLERANCE,2))/(soln->lipschitz_lambda*pow(soln->b, 2)));
+
 
 	if (pi_eval_flag == TRUE)
 	{
 		pi_ratio[(num_samples-1) % sd_global->config.SCAN_LEN] = argmax_dif_sum
 				/ argmax_all_sum;
-        
-        for ( cnt = 0; cnt < 3; cnt++) {
-            start_position = 0; /* if SCAN_LEN < SCAN_LEN, need start_position to calculate variance of pi_ratio*/
-            if (scan_len[cnt] <= sd_global->config.SCAN_LEN && !(sd_global-> pi_flag[cnt])) {
-                if (num_samples - sd_global->config.PI_EVAL_START + 1  >= scan_len[cnt]){
-                    start_position = num_samples % sd_global->config.SCAN_LEN - scan_len[cnt] ;
-                    if (start_position < 0) {
-                        start_position = start_position + sd_global->config.SCAN_LEN;
-                    }
-                    vari = calc_pi_var(sd_global, pi_ratio, start_position, scan_len[cnt]);
-                }
-                if (DBL_ABS(vari) >= .000002
-                    || (pi_ratio[num_samples % scan_len[cnt]]) < 0.95)
-                    sd_global-> pi_flag[cnt]= FALSE;
-                else
-                {
-                    sd_global-> pi_flag[cnt] = TRUE;
-                    /* Now start refreshing master problem in CPLEX */
-                    if (RESUME_FLAG) {
-                        refresh_master(sd_global, prob, cell, soln);
-                    }
-                }
-            }
-        }
-        if (!(*dual_statble_flag)) {
-            start_position = 0;
-            if (num_samples - sd_global->config.PI_EVAL_START + 1  >= sd_global->config.SCAN_LEN){
-                start_position = num_samples % sd_global->config.SCAN_LEN - sd_global->config.SCAN_LEN ;
-                if (start_position < 0) {
-                    start_position = start_position + sd_global->config.SCAN_LEN;
-                }
-                /*added by Yifan return vari*/
-                // vari = calc_var(sd_global, &(pi_ratio[start_position]), NULL, NULL, 0);
-                vari = calc_pi_var(sd_global, pi_ratio, start_position, sd_global->config.SCAN_LEN);
-            }
-            if (DBL_ABS(vari) >= .000002
-				|| (pi_ratio[num_samples % sd_global->config.SCAN_LEN]) < 0.95)
-                *dual_statble_flag = FALSE;
-            else
-            {
-                *dual_statble_flag = TRUE;
-                /* start refreshing master problem in CPLEX */
-                //refresh_master(sd_global, prob, cell, soln);
-            }
-        }
+
+		for ( cnt = 0; cnt < 3; cnt++) {
+			start_position = 0; /* if SCAN_LEN < SCAN_LEN, need start_position to calculate variance of pi_ratio*/
+			if (scan_len[cnt] <= sd_global->config.SCAN_LEN && !(sd_global-> pi_flag[cnt])) {
+				if (num_samples - sd_global->config.PI_EVAL_START + 1  >= scan_len[cnt]){
+					start_position = num_samples % sd_global->config.SCAN_LEN - scan_len[cnt] ;
+					if (start_position < 0) {
+						start_position = start_position + sd_global->config.SCAN_LEN;
+					}
+					vari = calc_pi_var(sd_global, pi_ratio, start_position, scan_len[cnt]);
+				}
+				if (DBL_ABS(vari) >= .000002
+						|| (pi_ratio[num_samples % scan_len[cnt]]) < 0.95)
+					sd_global-> pi_flag[cnt]= FALSE;
+				else
+				{
+					sd_global-> pi_flag[cnt] = TRUE;
+					/* Now start refreshing master problem in CPLEX */
+					if (RESUME_FLAG) {
+						refresh_master(sd_global, prob, cell, soln);
+					}
+				}
+			}
+		}
+		if (!(*dual_statble_flag)) {
+			start_position = 0;
+			if (num_samples - sd_global->config.PI_EVAL_START + 1  >= sd_global->config.SCAN_LEN){
+				start_position = num_samples % sd_global->config.SCAN_LEN - sd_global->config.SCAN_LEN ;
+				if (start_position < 0) {
+					start_position = start_position + sd_global->config.SCAN_LEN;
+				}
+				/*added by Yifan return vari*/
+						// vari = calc_var(sd_global, &(pi_ratio[start_position]), NULL, NULL, 0);
+				vari = calc_pi_var(sd_global, pi_ratio, start_position, sd_global->config.SCAN_LEN);
+			}
+			if (DBL_ABS(vari) >= .000002
+					|| (pi_ratio[num_samples % sd_global->config.SCAN_LEN]) < 0.95)
+				*dual_statble_flag = FALSE;
+			else
+			{
+				*dual_statble_flag = TRUE;
+				/* start refreshing master problem in CPLEX */
+				//refresh_master(sd_global, prob, cell, soln);
+			}
+		}
 	}
 
 	if (0)
@@ -908,8 +907,8 @@ int add_to_cutpool(sdglobal_type* sd_global, double *alpha, double *beta,
 
 	if (!(cut->istar = arr_alloc(s->omega->most, int)))
 		err_msg("Allocation", "add_to_cutpool", "istar");
-    if (!(cut->istar_index = arr_alloc(s->omega->most, int)))
-        err_msg("Allocation", "add_to_cutpool", "istar_index");
+	if (!(cut->istar_index = arr_alloc(s->omega->most, int)))
+		err_msg("Allocation", "add_to_cutpool", "istar_index");
 
 	if (!(cut->beta = arr_alloc(mast_cols+1, double)))
 		err_msg("Allocation", "add_to_cutpool", "beta");
@@ -1026,7 +1025,7 @@ int FEA_cut_check_add(sdglobal_type* sd_global, cell_type *cell, prob_type *p,
 }
 
 /***********************************************************************\
-** This function loops through all the dual vectors found so far
+ ** This function loops through all the dual vectors found so far
  ** and returns the index of the one which satisfies the expression:
  **
  **	argmax { Pi x (R - T x X) | all Pi }
@@ -1046,7 +1045,7 @@ i_type compute_istar(int obs, one_cut *cut, sigma_type *sigma,
 		double *argmax, BOOL pi_eval, int ictr)
 {
 	double arg;
-//  double	argmax;             //modified by Yifan to return argmax value 09/22/2011
+	//  double	argmax;             //modified by Yifan to return argmax value 09/22/2011
 	int sig_pi, del_pi;
 	int c, new_pisz;
 	i_type ans;
@@ -1068,7 +1067,7 @@ i_type compute_istar(int obs, one_cut *cut, sigma_type *sigma,
 	*argmax = -DBL_MAX;
 
 	/*added by Yifan to enable parallel process*/
-// #pragma omp for private(sig_pi,del_pi, arg)
+	// #pragma omp for private(sig_pi,del_pi, arg)
 	for (sig_pi = 0; sig_pi < sigma->cnt; sig_pi++)
 	{
 		if (sigma->ck[sig_pi] <= ictr)
@@ -1165,7 +1164,7 @@ i_type compute_new_istar(int obs, one_cut *cut, sigma_type *sigma,
 		}
 	}
 
-//printf("argmax:%f and newistar(%d,%d) and ck %d\n",*argmax, ans.sigma, ans.delta, sigma->ck[ans.sigma]);
+	//printf("argmax:%f and newistar(%d,%d) and ck %d\n",*argmax, ans.sigma, ans.delta, sigma->ck[ans.sigma]);
 
 #ifdef LOOP
 	printf("Exiting compute_new_istar\n");
@@ -1174,7 +1173,7 @@ i_type compute_new_istar(int obs, one_cut *cut, sigma_type *sigma,
 }
 
 /***********************************************************************\
-** This function will remove the oldest cut whose corresponding dual
+ ** This function will remove the oldest cut whose corresponding dual
  ** variable is zero (thus, a cut which was slack in last solution).
  \***********************************************************************/
 void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
@@ -1191,13 +1190,13 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 	/* Original rows and all the added cuts.  The eta row isn't needed */
 	dual = arr_alloc(p->num->mast_rows+c->cuts->cnt+1, double);
-    
-    /* modified by Yifan 2014.03.29 */
+
+	/* modified by Yifan 2014.03.29 */
 	// get_dual(dual, c->master, p->num, p->num->mast_rows + c->cuts->cnt);
-    for (idx = 0 ; idx < p->num->mast_rows+c->cuts->cnt+1; idx++) {
-        dual[idx] = s->Master_pi[idx];
-    }
-    
+	for (idx = 0 ; idx < p->num->mast_rows+c->cuts->cnt+1; idx++) {
+		dual[idx] = s->Master_pi[idx];
+	}
+
 
 	min_cut_obs = c->k;
 	oldest_cut = c->cuts->cnt;
@@ -1212,7 +1211,7 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 		if (c->cuts->val[idx]->cut_obs < min_cut_obs
 				&& DBL_ABS(dual[c->cuts->val[idx]->row_num + 1])
-						<= sd_global->config.TOLERANCE)
+		<= sd_global->config.TOLERANCE)
 		{
 			min_cut_obs = c->cuts->val[idx]->cut_obs;
 			oldest_cut = idx;
@@ -1257,7 +1256,7 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 }
 
 /***********************************************************************\
-** When invoked, this function will drop all cuts which have been slack
+ ** When invoked, this function will drop all cuts which have been slack
  ** in more than a given number of consecutive solutions of the master problem.
  ** It first obtains a dual solution to the most recent master, and 
  ** increments the slack_cnt of each cut whose dual variable is zero.
@@ -1310,7 +1309,7 @@ void thin_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 }
 
 /***********************************************************************\
-** This function removes a cut from both the cut_type structure and the
+ ** This function removes a cut from both the cut_type structure and the
  ** master problem constraint matrix.  In the cuts->val array, the last
  ** cut is swapped into the place of the exiting cut.  In the constraint
  ** matrix, the row is deleted, and the row numbers of all constraints
@@ -1336,7 +1335,7 @@ void drop_cut(int cut_idx, prob_type *p, cell_type *c, soln_type *s)
 
 	/* Print all the cuts before droping a cut, for the purpose of cut index
 	 checking. zl 
-	 
+
 	 print_cut_info(c, p->num, "Before Dropping a cut");
 	 */
 
@@ -1375,7 +1374,7 @@ void drop_cut(int cut_idx, prob_type *p, cell_type *c, soln_type *s)
 }
 
 /***********************************************************************\
-** This function will add a new cut to the master problem.  If 
+ ** This function will add a new cut to the master problem.  If
  ** This function adds a cut to the master problem, in the form
  ** of a constraint.  When the objective function is: Min cx + eta
  ** a cut is specified as:   eta >= Alpha + Beta x X.
@@ -1400,7 +1399,7 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 	int *coef_col; /* column number of each beta coefficient */
 	int cnt;
 	double rhs; /* rhs value in regularized QP method. */
-//	BOOL reach_max_cuts = TRUE;
+	//	BOOL reach_max_cuts = TRUE;
 	int row;
 	/*int idx;*/
 #ifdef TRACE
@@ -1416,8 +1415,8 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 	/* Insure that there is room to add another cut */
 	if (c->cuts->cnt >= p->num->max_cuts)
 		reduce_cuts(sd_global, p, c, s);
-//	else
-//		reach_max_cuts = FALSE;
+	//	else
+	//		reach_max_cuts = FALSE;
 
 	/*deleate all feasibility cuts so that the new optimality cut can be added to the end of the optimality cuts  Yifan /03/09/2012*/
 	for (cnt = c->feasible_cuts_added->cnt - 1; cnt >= 0; cnt--)
@@ -1523,8 +1522,8 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 			rhs = c->feasible_cuts_added->val[cnt]->alpha;
 		else
 			rhs = c->feasible_cuts_added->val[cnt]->alpha
-					- CxX(c->feasible_cuts_added->val[cnt]->beta, s->incumb_x,
-							p->num->mast_cols) + sd_global->config.FEA_TOLER;
+			- CxX(c->feasible_cuts_added->val[cnt]->beta, s->incumb_x,
+					p->num->mast_cols) + sd_global->config.FEA_TOLER;
 		/* putshing the solution a little inside the boundary 04/30/2013 Yifan*/
 
 		if (!add_row(c->master, beg_col, end_col, coef_col,
@@ -1538,7 +1537,7 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 
 	/* Print all the cuts after adding a cut, for the purpose of cut index
 	 checking. zl  
-	 
+
 	 print_cut_info(c, p->num, "After adding a cut");
 	 */
 
@@ -1600,7 +1599,7 @@ void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p,
 		rhs = cut->alpha;
 	else
 		rhs = cut->alpha - CxX(cut->beta, s->incumb_x, p->num->mast_cols)
-				+ sd_global->config.FEA_TOLER;
+		+ sd_global->config.FEA_TOLER;
 	/* putshing the solution a little inside the boundary 04/30/2013 Yifan*/
 
 	/* print out information for checking purpose. zl */
@@ -1623,7 +1622,7 @@ void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p,
 
 	/* Print all the cuts after adding a cut, for the purpose of cut index
 	 checking. zl  
-	 
+
 	 print_cut_info(c, p->num, "After adding a cut");
 	 */
 #ifdef TRACE
@@ -1633,7 +1632,7 @@ void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p,
 }
 
 /***********************************************************************\
-** This function allocates memory for the arrays inside a single
+ ** This function allocates memory for the arrays inside a single
  ** cut, and initializes its values accordingly.  The cut structure 
  ** itself is assumed to be already allocated.  Note, each beta 
  ** vector contains room for its one-norm, thought it just gets
@@ -1649,7 +1648,7 @@ one_cut *new_cut(int num_x, int num_istar, int num_samples)
 #endif
 
 	cut = (one_cut *) mem_malloc (sizeof(one_cut));
-    cut->cell_num = 0;
+	cut->cell_num = 0;
 	cut->cut_obs = num_samples;
 	cut->omega_cnt = num_istar;
 	cut->slack_cnt = 0;
@@ -1657,9 +1656,9 @@ one_cut *new_cut(int num_x, int num_istar, int num_samples)
 
 	if (!(cut->istar = arr_alloc(num_istar, int)))
 		err_msg("Allocation", "new_cut", "istar");
-    
-    if (!(cut->istar_index = arr_alloc(num_istar, int)))
-        err_msg("Allocation", "new_cut", "istar_index");
+
+	if (!(cut->istar_index = arr_alloc(num_istar, int)))
+		err_msg("Allocation", "new_cut", "istar_index");
 
 	if (!(cut->beta = arr_alloc(num_x+1, double)))
 		err_msg("Allocation", "new_cut", "beta");
@@ -1686,7 +1685,7 @@ one_cut *new_fea_cut(int num_x, int num_istar, int num_samples)
 #endif
 
 	cut = (one_cut *) mem_malloc (sizeof(one_cut));
-    cut->cell_num = 0;
+	cut->cell_num = 0;
 	cut->cut_obs = num_samples;
 	cut->omega_cnt = num_istar;
 	cut->slack_cnt = 0; /*make sure the cut won't be dropped Yifan /08/22/2011*/
@@ -1694,8 +1693,8 @@ one_cut *new_fea_cut(int num_x, int num_istar, int num_samples)
 
 	if (!(cut->istar = arr_alloc(num_istar, int)))
 		err_msg("Allocation", "new_fea_cut", "istar");
-    if (!(cut->istar_index = arr_alloc(num_istar, int)))
-        err_msg("Allocation", "new_fea_cut", "istar_index");
+	if (!(cut->istar_index = arr_alloc(num_istar, int)))
+		err_msg("Allocation", "new_fea_cut", "istar_index");
 
 	if (!(cut->beta = arr_alloc(num_x+1, double)))
 		err_msg("Allocation", "new_fea_cut", "beta");
@@ -1710,7 +1709,7 @@ one_cut *new_fea_cut(int num_x, int num_istar, int num_samples)
 }
 
 /***********************************************************************\
-** This function frees the two arrays allocated for a single cut.
+ ** This function frees the two arrays allocated for a single cut.
  ** When the incumbent cut is re-evaluated, its original value
  ** is erased and freed, and replaced by a new one.  Also, before
  ** exiting, the program must free all the cuts.
@@ -1729,8 +1728,8 @@ void free_cut(one_cut *cut)
 		 */
 		if (cut->istar)
 			mem_free(cut->istar);
-        if (cut->istar_index)
-            mem_free(cut->istar_index);
+		if (cut->istar_index)
+			mem_free(cut->istar_index);
 		if (cut->beta)
 			mem_free(cut->beta);
 		if (cut->is_incumbent)
@@ -1743,7 +1742,7 @@ void free_cut(one_cut *cut)
 }
 
 /***********************************************************************\
-** This function allocates memory for a new cut structure.  This entails
+ ** This function allocates memory for a new cut structure.  This entails
  ** the structure itself, and the _val_ array of one_cut pointers inside
  ** the structure.  The actual one_cut structures are allocated 
  ** according to the _num_betas_ parameter, via calls to new_cut().
@@ -1772,7 +1771,7 @@ cut_type *new_cuts(int num_cuts, int num_x, int num_betas)
 }
 
 /***********************************************************************\
-**
+ **
  **
  \***********************************************************************/
 void free_cuts(cut_type *cuts)
@@ -1806,43 +1805,31 @@ batch_cut_type *new_bcuts(prob_type *p, int bsize, batch_cut_type *batch_cuts)
 
 	if (!(batch_cuts = (batch_cut_type *) mem_malloc (sizeof(batch_cut_type))))
 		err_msg("Allocation", "batch_cut_type", "bcuts");
-
 	if (!(batch_cuts->batch = arr_alloc(bsize, cuts_ptr)))
 		err_msg("Allocation", "new_cuts", "cuts->val");
-
-	batch_cuts->b_size = bsize;
+	batch_cuts->b_size = 0;
 
 	return batch_cuts;
 }
 /* modified by Yifan 2013.05.05 */
 /* This function frees up all meomory allocated for batch cuts structure */
-void free_bcuts(batch_cut_type *batch_cuts)
-{
+void free_bcuts(batch_cut_type *batch_cuts) {
 	int idx;
 
-#ifdef TRACE
-	printf("Inside free_bcuts\n");
-#endif
 	/* Free all cuts structure saved for the compromise problem Yifan 2013/01/17 */
-	for (idx = 0; idx < BATCH_SIZE; idx++)
-	{
-      if (batch_cuts->batch[idx] != NULL) {
-        free_cuts(batch_cuts->batch[idx]);
-      }
-    }
+	for (idx = 0; idx < BATCH_SIZE; idx++) {
+		if (batch_cuts->batch[idx] != NULL) {
+			free_cuts(batch_cuts->batch[idx]);
+		}
+	}
 
-	/*
-	 for (idx = 0; idx < BATCH_SIZE; idx++) {
-	 mem_free(sd_global->bcuts->batch[idx]);
-	 }
-	 */
 	mem_free(batch_cuts->batch);
 	mem_free(batch_cuts);
 
 }
 
 /***********************************************************************\
-** This function prints the relevant information in a cut.
+ ** This function prints the relevant information in a cut.
  ** It is meant to be used for debugging.
  \***********************************************************************/
 void print_cut(cut_type *cuts, num_type *num, int idx)
@@ -1860,7 +1847,7 @@ void print_cut(cut_type *cuts, num_type *num, int idx)
 }
 
 /**********************************************************************\
-** This function prints some information of a cut for the purpose of
+ ** This function prints some information of a cut for the purpose of
  ** cut index checking. zl
  \**********************************************************************/
 void print_cut_info(cell_type *c, num_type *num, char *phrase)
@@ -1907,7 +1894,7 @@ void print_cut_info(cell_type *c, num_type *num, char *phrase)
 	 fprintf(g_FilePointer, "\nFail to get rmatspace. Error #%d", status);
 	 exit(1);
 	 }  
-	 
+
 	 */
 
 	status = get_rows(c->master, &nzcnt, rmatbeg, rmatind, rmatval, 200,
@@ -1961,46 +1948,46 @@ void print_cut_info(cell_type *c, num_type *num, char *phrase)
 
 void refresh_master(sdglobal_type *sd_global,prob_type *prob, cell_type *cell, soln_type *soln)
 {
-    int i,j,cnt;
-    //write_prob(cell->master, "master_prob.lp");
+	int i,j,cnt;
+	//write_prob(cell->master, "master_prob.lp");
 
-    free_master(cell->master);
-    if (!(cell->master = new_master(prob->master, cell->cuts, prob->num->max_cuts, NULL)))
+	free_master(cell->master);
+	if (!(cell->master = new_master(prob->master, cell->cuts, prob->num->max_cuts, NULL)))
 		err_msg("Copy", "solve_cell", "cell->master");
-    
-    for (i = prob->num->mast_rows; i <= prob->num->mast_rows + cell->cuts->cnt; i++) {
-        for (j = 0; j < cell->cuts->cnt; j++) {
-            if (i == cell->cuts->val[j]->row_num) {
-                for (cnt = 0 ; cnt < prob->master->mac; cnt++) {
-                    change_single_coef(cell->master, i, cnt, cell->cuts->val[j]->beta[cnt+1]);
-                }
-                change_single_coef(cell->master, i, -1, cell->cuts->val[j]->alpha_incumb);
-            }
-        }
-    }
-    
-    
-    /* Update master's rhs and bounds */
-    if (sd_global->config.MASTER_TYPE == SDQP)
-    {
-        change_rhs(prob, cell, soln);
-        change_bounds(prob, cell, soln);
-    }
-    
-    construct_QP(prob, cell, cell->quad_scalar);
-    /*Since we are doing this for master at the previous iteration, k-1 is the third input argument*/
-    change_eta_col(cell->master, cell->cuts, cell->k-1, soln, prob->num);
-    
-    /* Update eta coefficient on all cuts, based on cut_obs */
-    //write_prob(cell->master, "check_master.lp");
-//    if (sd_global->config.LB_TYPE == 1)
-//    {
-//        update_rhs(sd_global, prob, cell, soln);
-//    }
-//    if (!solve_problem(sd_global, cell->master))
-//    {
-//        cplex_err_msg(sd_global, "QP_Master", prob, cell, soln);
-//        return;
-//    }
+
+	for (i = prob->num->mast_rows; i <= prob->num->mast_rows + cell->cuts->cnt; i++) {
+		for (j = 0; j < cell->cuts->cnt; j++) {
+			if (i == cell->cuts->val[j]->row_num) {
+				for (cnt = 0 ; cnt < prob->master->mac; cnt++) {
+					change_single_coef(cell->master, i, cnt, cell->cuts->val[j]->beta[cnt+1]);
+				}
+				change_single_coef(cell->master, i, -1, cell->cuts->val[j]->alpha_incumb);
+			}
+		}
+	}
+
+
+	/* Update master's rhs and bounds */
+	if (sd_global->config.MASTER_TYPE == SDQP)
+	{
+		change_rhs(prob, cell, soln);
+		change_bounds(prob, cell, soln);
+	}
+
+	construct_QP(prob, cell, cell->quad_scalar);
+	/*Since we are doing this for master at the previous iteration, k-1 is the third input argument*/
+	change_eta_col(cell->master, cell->cuts, cell->k-1, soln, prob->num);
+
+	/* Update eta coefficient on all cuts, based on cut_obs */
+	//write_prob(cell->master, "check_master.lp");
+	//    if (sd_global->config.LB_TYPE == 1)
+	//    {
+	//        update_rhs(sd_global, prob, cell, soln);
+	//    }
+	//    if (!solve_problem(sd_global, cell->master))
+	//    {
+	//        cplex_err_msg(sd_global, "QP_Master", prob, cell, soln);
+	//        return;
+	//    }
 }
 
