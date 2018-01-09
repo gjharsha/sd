@@ -83,15 +83,17 @@ int solve_subprob(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	/* Recording the time for solving subproblem LPs. zl, 06/29/04. */
 	start = clock();
 	c->subprob->feaflag = TRUE; /*added by Yifan to generate feasibility cut 08/11/2011*/
+	write_prob(c->subprob, "subprob.lp");
 	ans = solve_problem(sd_global, c->subprob);
 	end = clock();
 	s->run_time->soln_subprob_iter += ((double) (end - start)) / CLOCKS_PER_SEC;
 
+	get_dual(s->Pi, c->subprob, p->num, p->num->sub_rows);
+
 	/* Record the lowest subproblem objective function values so far.
 	 zl, 07/01/04. */
 	sub_obj = get_objective(c->subprob);
-    
-    
+
 	if (s->sub_lb_checker > sub_obj)
 		s->sub_lb_checker = sub_obj;
 

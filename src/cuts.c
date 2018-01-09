@@ -82,7 +82,7 @@
  ** and form a new cut based upon it.  The new cut is added
  ** to the array of cuts, and the number of cuts is incremented.
  \***********************************************************************/
-void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
+void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *cell,
 		soln_type *s, int omeg_idx, BOOL new_omega)
 {
 	one_cut *cut;
@@ -92,19 +92,19 @@ void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 #endif
 
 #ifdef TRACE
-	printf("Inside form_new_cut; %d cuts now\n", c->cuts->cnt);
+	printf("Inside form_new_cut; %d cuts now\n", cell->cuts->cnt);
 #endif
 
-	cut = new_cut(p->num->mast_cols, s->omega->most, c->k);
+	cut = new_cut(p->num->mast_cols, s->omega->most, cell->k);
 
-	stochastic_updates(sd_global, c, c->lambda, c->sigma, s->delta, s->omega,
-			p->num, p->Rbar, p->Tbar, c->subprob, s->Pi, omeg_idx, new_omega);
+	stochastic_updates(sd_global, cell, cell->lambda, cell->sigma, s->delta, s->omega,
+			p->num, p->Rbar, p->Tbar, cell->subprob, s->Pi, omeg_idx, new_omega);
 
-	SD_cut(sd_global, c->sigma, s->delta, s->omega, p->num, cut, s->candid_x,
-			s->pi_ratio, s->max_ratio, s->min_ratio, c->k,
+	SD_cut(sd_global, cell->sigma, s->delta, s->omega, p->num, cut, s->candid_x,
+			s->pi_ratio, s->max_ratio, s->min_ratio, cell->k,
 			s->dual_statble_flag);
     
-    add_cut(sd_global, cut, p, c, s);
+    add_cut(sd_global, cut, p, cell, s);
 
 	/* Print all the cuts after adding a cut, for the purpose of cut index
 	 checking. zl 
@@ -115,34 +115,34 @@ void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 #ifdef RUN
 	/*
-	 if (c->k == 10)
+	 if (cell->k == 10)
 	 {
 	 print_vect(s->candid_x, p->num->mast_cols, "Candidate X");
 
-	 for(idx = 0; idx < c->lambda->cnt; idx++)
+	 for(idx = 0; idx < cell->lambda->cnt; idx++)
 	 for(obs = 0; obs < s->omega->most; obs++)
 	 if (valid_omega_idx(s->omega, obs))
 	 print_delta(s->delta, p->num, idx, obs);
 
-	 for(idx = 0; idx < c->lambda->cnt; idx++)
-	 print_lambda(c->lambda, p->num, idx);
+	 for(idx = 0; idx < cell->lambda->cnt; idx++)
+	 print_lambda(cell->lambda, p->num, idx);
 
 	 for(obs = 0; obs < s->omega->most; obs++)
 	 if (valid_omega_idx(omega, obs))
 	 print_omega(s->omega, p->num, obs);
 
-	 for(idx = 0; idx < c->sigma->cnt; idx++)
-	 print_sigma(c->sigma, p->num, idx);
+	 for(idx = 0; idx < cell->sigma->cnt; idx++)
+	 print_sigma(cell->sigma, p->num, idx);
 
-	 for(idx=0; idx<c->cuts->cnt; idx++)
-	 print_cut(c->cuts, p->num, idx);
+	 for(idx=0; idx<cell->cuts->cnt; idx++)
+	 print_cut(cell->cuts, p->num, idx);
 	 }
 	 */
 #endif
 
 #ifdef DEBUG
-	for(idx=0;idx<c->cuts->cnt;idx++)
-	print_cut(c->cuts, p->num, idx);
+	for(idx=0;idx<cell->cuts->cnt;idx++)
+	print_cut(cell->cuts, p->num, idx);
 	printf("\n");
 #endif
 
@@ -156,7 +156,7 @@ void form_new_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
  ** and form new cuts based upon it.  The new cuts are added
  ** to the pool of feasibility cuts, and the number of cuts is incremented.
  \***********************************************************************/
-void form_fea_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
+void form_fea_cut(sdglobal_type* sd_global, prob_type *p, cell_type *cell,
 		soln_type *s, int omeg_idx, vector x_k, BOOL new_omega)
 {
 	BOOL new_sigma;
@@ -165,33 +165,33 @@ void form_fea_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	int idx;
 
 #ifdef TRACE
-	printf("Inside form_fea_cut; %d cuts now\n", c->cuts->cnt);
+	printf("Inside form_fea_cut; %d cuts now\n", cell->cuts->cnt);
 #endif    
 
-	new_sigma = stochastic_updates(sd_global, c, c->feasible_lambda,
-			c->feasible_sigma, s->feasible_delta, s->omega, p->num, p->Rbar,
-			p->Tbar, c->subprob, s->Pi, omeg_idx, new_omega);
+	new_sigma = stochastic_updates(sd_global, cell, cell->feasible_lambda,
+			cell->feasible_sigma, s->feasible_delta, s->omega, p->num, p->Rbar,
+			p->Tbar, cell->subprob, s->Pi, omeg_idx, new_omega);
 
-	FEA_cut(sd_global, c, s, c->feasible_sigma, s->feasible_delta, s->omega,
+	FEA_cut(sd_global, cell, s, cell->feasible_sigma, s->feasible_delta, s->omega,
 			p->num, s->omega->most, s->dual_statble_flag, new_omega, new_sigma);
 
-//	cut_cnt_pool = c->feasible_cuts_pool->cnt;
+//	cut_cnt_pool = cell->feasible_cuts_pool->cnt;
 
 #ifdef DEBUG
 	printf("cut_cnt_pool is %d\n",cut_cnt_pool);
-	for(idx=0; idx < c->feasible_cuts_pool->cnt; idx++)
-	print_cut(c->feasible_cuts_pool, p->num, idx);
+	for(idx=0; idx < cell->feasible_cuts_pool->cnt; idx++)
+	print_cut(cell->feasible_cuts_pool, p->num, idx);
 	printf("\n");
 #endif
 
-	start = c->feasible_cuts_added->cnt;
-	cut_cnt_added = FEA_cut_check_add(sd_global, c, p, s, x_k);
+	start = cell->feasible_cuts_added->cnt;
+	cut_cnt_added = FEA_cut_check_add(sd_global, cell, p, s, x_k);
 	end = cut_cnt_added;
 
 #ifdef DEBUG
 	printf("cut_cnt_added is %d\n",cut_cnt_added);
-	for(idx=0; idx < c->feasible_cuts_added->cnt; idx++)
-	print_cut(c->feasible_cuts_added, p->num, idx);
+	for(idx=0; idx < cell->feasible_cuts_added->cnt; idx++)
+	print_cut(cell->feasible_cuts_added, p->num, idx);
 	printf("\n");
 #endif
 
@@ -199,26 +199,26 @@ void form_fea_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	{
 		for (idx = start; idx < end; idx++)
 		{
-			add_cut_to_master(sd_global, c->feasible_cuts_added->val[idx], p, c,
+			add_cut_to_master(sd_global, cell->feasible_cuts_added->val[idx], p, cell,
 					s, idx);
 		}
-		update_dual_size(c, s, p);
+		update_dual_size(cell, s, p);
 	}
 
 #ifdef TRACE
-	printf("Exiting form_fea_cut; %d cuts now\n", c->cuts->cnt);
+	printf("Exiting form_fea_cut; %d cuts now\n", cell->cuts->cnt);
 #endif
 
 }
 
-void update_dual_size(cell_type *c, soln_type *s, prob_type *p)
+void update_dual_size(cell_type *cell, soln_type *s, prob_type *p)
 {
 
 	mem_free(s->Master_pi);
 	/* Yifan 03/11/2012 the zero-th element is saved for one-norm */
 	/* Yifan 03/11/2012 new room in dual value is needed for new feasibility cut*/
 	s->Master_pi =
-			arr_alloc(p->num->mast_rows+1+p->num->max_cuts+c->feasible_cuts_added->cnt,double);
+			arr_alloc(p->num->mast_rows+1+p->num->max_cuts+cell->feasible_cuts_added->cnt,double);
 }
 
 /***********************************************************************\
@@ -233,7 +233,7 @@ void update_dual_size(cell_type *c, soln_type *s, prob_type *p)
  ** replacing it in the array of cuts).  Note that the updates do
  ** NOT treat the omega as a new observation!
  \***********************************************************************/
-BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
+BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *cell,
 		soln_type *s, int omeg_idx)
 {
 
@@ -255,8 +255,8 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	 double	object_est;
 	 double	incumb_est;
 	 
-	 object_est = f_k(s->incumb_x, p->c, c->cuts, c->theta, p->num, c, &best);
-	 incumb_est = cut_height(c->cuts->val[s->incumb_cut], s->incumb_x, c, p->num);
+	 object_est = f_k(s->incumb_x, p->c, cell->cuts, cell->theta, p->num, c, &best);
+	 incumb_est = cut_height(cell->cuts->val[s->incumb_cut], s->incumb_x, c, p->num);
 	 incumb_est += CxX(p->c, s->incumb_x, p->num->mast_cols);
 	 **
 	 #ifdef DEBUG
@@ -273,28 +273,28 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	 ** but we don't need to reform it!!!  Need height of incumbent...
 	 **
 	 if (object_est - incumb_est > sd_global->config.TOLERANCE ||
-	 c->k - s->last_update == p->tau)
+	 cell->k - s->last_update == p->tau)
 	 **
 	 */
 
-	if (c->k - s->last_update == p->tau)
+	if (cell->k - s->last_update == p->tau)
 	{
 
-		solve_subprob(sd_global, p, c, s, s->incumb_x, omeg_idx);
+		solve_subprob(sd_global, p, cell, s, s->incumb_x, omeg_idx);
 
 		/* Record time spent on argmax procedures without counting the time
 		 on solving the subproblem LP. zl, 06/30/04. */
 		start = clock(); /* zl, 06/30/04. */
 
-		if (c->subprob->feaflag == TRUE)
+		if (cell->subprob->feaflag == TRUE)
 		{
 
 			/*modified by Yifan to avoid dropping feasibility cuts 02/09/2012*/
 			/* Yifan 03/04/2012 Updated for Feasibility Cuts*/
-			if (c->cuts->cnt >= p->num->max_cuts)
+			if (cell->cuts->cnt >= p->num->max_cuts)
 			{
-				drop_cut(s->incumb_cut, p, c, s);
-				decrease_feacut_rownum(c);
+				drop_cut(s->incumb_cut, p, cell, s);
+				decrease_feacut_rownum(cell);
 			}
 
 		}
@@ -304,31 +304,31 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 		s->run_time->argmax_iter += ((double) (end - start)) / CLOCKS_PER_SEC;
 
-		if (c->subprob->feaflag == FALSE)
+		if (cell->subprob->feaflag == FALSE)
 		{
 			incumb_change = TRUE;
 		}
 		else
 		{
 			start = clock(); /* zl, 06/30/04. */
-			cut = new_cut(p->num->mast_cols, s->omega->most, c->k);
+			cut = new_cut(p->num->mast_cols, s->omega->most, cell->k);
 			cut->is_incumbent = TRUE; /*added by Yifan 02/02/2012 indentify a new incumbent cut*/
-			stochastic_updates(sd_global, c, c->lambda, c->sigma, s->delta,
-					s->omega, p->num, p->Rbar, p->Tbar, c->subprob, s->Pi,
+			stochastic_updates(sd_global, cell, cell->lambda, cell->sigma, s->delta,
+					s->omega, p->num, p->Rbar, p->Tbar, cell->subprob, s->Pi,
 					omeg_idx, FALSE);
-			SD_cut(sd_global, c->sigma, s->delta, s->omega, p->num, cut,
-					s->incumb_x, s->pi_ratio, s->max_ratio, s->min_ratio, c->k,
+			SD_cut(sd_global, cell->sigma, s->delta, s->omega, p->num, cut,
+					s->incumb_x, s->pi_ratio, s->max_ratio, s->min_ratio, cell->k,
 					s->dual_statble_flag);
-			s->incumb_cut = add_cut(sd_global, cut, p, c, s);
-			s->last_update = c->k;
+			s->incumb_cut = add_cut(sd_global, cut, p, cell, s);
+			s->last_update = cell->k;
 			/* zl, 06/30/04. */
 			end = clock();
 			s->run_time->argmax_iter += ((double) (end - start))
 					/ CLOCKS_PER_SEC;
 
 			/*added to record subproblem objective estimate by Yifan 02/01/12*/
-			//s->subobj_est[c->k] = cut->alpha - CxX(cut->beta, s->incumb_x, p->num->mast_cols);
-			s->subobj_est = cut_height(sd_global, cut, s->incumb_x, c, p->num);
+			//s->subobj_est[cell->k] = cut->alpha - CxX(cut->beta, s->incumb_x, p->num->mast_cols);
+			s->subobj_est = cut_height(sd_global, cut, s->incumb_x, cell, p->num);
 		}
 
 		//printf("s->subobj_est is : %f\n",s->subobj_est);
@@ -341,18 +341,18 @@ BOOL form_incumb_cut(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 #ifdef DEBUG
 		printf("Changed incumbent cut to:\n");
-		print_cut(c->cuts, p->num, s->incumb_cut);
+		print_cut(cell->cuts, p->num, s->incumb_cut);
 #endif
 
 	}
 	return incumb_change;
 }
 
-void decrease_feacut_rownum(cell_type *c)
+void decrease_feacut_rownum(cell_type *cell)
 {
 	int idx;
-	for (idx = 0; idx < c->feasible_cuts_added->cnt; idx++)
-		--c->feasible_cuts_added->val[idx]->row_num;
+	for (idx = 0; idx < cell->feasible_cuts_added->cnt; idx++)
+		--cell->feasible_cuts_added->val[idx]->row_num;
 }
 
 /***********************************************************************\
@@ -539,7 +539,7 @@ void SD_cut(sdglobal_type* sd_global, sigma_type *sigma, delta_type *delta,
 			/* For each observation, find the Pi which maximizes height at X. */
 			if (pi_eval_flag == TRUE)
 			{
-				//printf("\n This is iteration c->k: %d \n",num_samples);
+				//printf("\n This is iteration cell->k: %d \n",num_samples);
 				//istar = compute_istar(obs, cut, sigma, delta, Xvect, num, pi_Tbar_x, argmax_all, FALSE, num_samples);
 				//printf("This is argmax OSD for obs %d : %f and istar(%d,%d)\n", obs, *argmax_all, istar.sigma, istar.delta);
 
@@ -597,7 +597,7 @@ void SD_cut(sdglobal_type* sd_global, sigma_type *sigma, delta_type *delta,
 
 			}
 
-			// printf("c->k=%d  STABLE_FLAG: %d, max: %f, min: %f, diff: %f, This is new pi's impact ratio # %d: %f \n", num_samples, *dual_statble_flag,max_ratio, min_ratio, max_ratio-min_ratio, num_samples %sd_global->config.SCAN_LEN,  pi_ratio[num_samples %sd_global->config.SCAN_LEN]);
+			// printf("cell->k=%d  STABLE_FLAG: %d, max: %f, min: %f, diff: %f, This is new pi's impact ratio # %d: %f \n", num_samples, *dual_statble_flag,max_ratio, min_ratio, max_ratio-min_ratio, num_samples %sd_global->config.SCAN_LEN,  pi_ratio[num_samples %sd_global->config.SCAN_LEN]);
 
 #ifdef LOOP
 			printf("\nistar.sigma=%d.  istar.delta=%d", istar.sigma, istar.delta);
@@ -632,9 +632,9 @@ void SD_cut(sdglobal_type* sd_global, sigma_type *sigma, delta_type *delta,
 
 	if (0)
 	{
-		/*printf("c->k=%d  STABLE_FLAG: %d, max: %f, min: %f, diff: %f, This is new pi's impact ratio # %d: %f \n", num_samples, *dual_statble_flag,max_ratio, min_ratio, max_ratio-min_ratio, num_samples %sd_global->config.SCAN_LEN,  pi_ratio[num_samples %sd_global->config.SCAN_LEN]);*/
+		/*printf("cell->k=%d  STABLE_FLAG: %d, max: %f, min: %f, diff: %f, This is new pi's impact ratio # %d: %f \n", num_samples, *dual_statble_flag,max_ratio, min_ratio, max_ratio-min_ratio, num_samples %sd_global->config.SCAN_LEN,  pi_ratio[num_samples %sd_global->config.SCAN_LEN]);*/
 		fptr = fopen("pi_ratio.log", "a");
-		fprintf(fptr, "c->k=%d, %d:%f, vari:%.9f, dual_stable_flag: %d\n",
+		fprintf(fptr, "cell->k=%d, %d:%f, vari:%.9f, dual_stable_flag: %d\n",
 				num_samples, num_samples % sd_global->config.SCAN_LEN,
 				pi_ratio[num_samples % sd_global->config.SCAN_LEN], vari,
 				*dual_statble_flag);
@@ -763,7 +763,7 @@ int FEA_cut(sdglobal_type* sd_global, cell_type *cell, soln_type *soln,
  ** alpha and beta provided.
  \***********************************************************************/
 int add_to_cutpool(sdglobal_type* sd_global, double *alpha, double *beta,
-		cell_type *c, soln_type *s, int mast_cols)
+		cell_type *cell, soln_type *s, int mast_cols)
 {
 	one_cut *cut;
 	double cut_alpha;
@@ -771,20 +771,20 @@ int add_to_cutpool(sdglobal_type* sd_global, double *alpha, double *beta,
 #ifdef TRACE
 	printf("Inside add_to_cutpool\n");
 #endif
-	for (cnt = 0; cnt < c->feasible_cuts_pool->cnt; cnt++)
+	for (cnt = 0; cnt < cell->feasible_cuts_pool->cnt; cnt++)
 	{
-		cut_alpha = c->feasible_cuts_pool->val[cnt]->alpha;
+		cut_alpha = cell->feasible_cuts_pool->val[cnt]->alpha;
 		if (DBL_ABS(*alpha-cut_alpha) < sd_global->config.TOLERANCE)
 		{
-			if (equal_arr(beta, c->feasible_cuts_pool->val[cnt]->beta,
+			if (equal_arr(beta, cell->feasible_cuts_pool->val[cnt]->beta,
 					mast_cols, sd_global->config.TOLERANCE))
 			{
-				return c->feasible_cuts_pool->cnt;
+				return cell->feasible_cuts_pool->cnt;
 			}
 		}
 	}
 	cut = (one_cut *) mem_malloc (sizeof(one_cut));
-	cut->cut_obs = c->k;
+	cut->cut_obs = cell->k;
 	cut->omega_cnt = s->omega->most;
 	cut->slack_cnt = 0;
 	cut->is_incumbent = FALSE;
@@ -806,20 +806,20 @@ int add_to_cutpool(sdglobal_type* sd_global, double *alpha, double *beta,
 	/* One_norm might cuase the same vector become different*/
 	/* cut->beta[0] = one_norm(cut->beta, mast_cols); */
 
-	c->feasible_cuts_pool->val[c->feasible_cuts_pool->cnt] = cut;
+	cell->feasible_cuts_pool->val[cell->feasible_cuts_pool->cnt] = cut;
 
 #ifdef TRACE
 	printf("Exiting add_to_cutpool\n");
 #endif
-	return ++c->feasible_cuts_pool->cnt;
+	return ++cell->feasible_cuts_pool->cnt;
 }
 
 /***********************************************************************\
  ** Feasibility cuts which are violated by the current candidate solution
- ** are added to the c->feasibile_cuts_added structure.
+ ** are added to the cell->feasibile_cuts_added structure.
  ** If Beta x X  >=  Alpha can not be satisfied, then it  will be added
  ** as a new feasibility cut to the master problem temporarily in
- ** c->feasibile_cuts_added structure.
+ ** cell->feasibile_cuts_added structure.
 
  \***********************************************************************/
 int FEA_cut_check_add(sdglobal_type* sd_global, cell_type *cell, prob_type *p,
@@ -1058,8 +1058,7 @@ i_type compute_new_istar(int obs, one_cut *cut, sigma_type *sigma,
 ** This function will remove the oldest cut whose corresponding dual
  ** variable is zero (thus, a cut which was slack in last solution).
  \***********************************************************************/
-void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
-		soln_type *s)
+void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *cell, soln_type *s)
 {
 	int oldest_cut, min_cut_obs;
 	int idx;
@@ -1071,13 +1070,13 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 #endif
 
 	/* Original rows and all the added cuts.  The eta row isn't needed */
-	dual = arr_alloc(p->num->mast_rows+c->cuts->cnt+1, double);
-	get_dual(dual, c->master, p->num, p->num->mast_rows + c->cuts->cnt);
+	dual = arr_alloc(p->num->mast_rows+cell->cuts->cnt+1, double);
+	get_dual(dual, cell->master, p->num, p->num->mast_rows + cell->cuts->cnt);
 
-	min_cut_obs = c->k;
-	oldest_cut = c->cuts->cnt;
+	min_cut_obs = cell->k;
+	oldest_cut = cell->cuts->cnt;
 
-	for (idx = 0; idx < c->cuts->cnt; idx++)
+	for (idx = 0; idx < cell->cuts->cnt; idx++)
 	{
 		/* avoid dropping incumbent cut*/
 		if (idx == s->incumb_cut)
@@ -1085,29 +1084,27 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 			continue;
 		}
 
-		if (c->cuts->val[idx]->cut_obs < min_cut_obs
-				&& DBL_ABS(dual[c->cuts->val[idx]->row_num + 1])
+		if (cell->cuts->val[idx]->cut_obs < min_cut_obs
+				&& DBL_ABS(dual[cell->cuts->val[idx]->row_num + 1])
 						<= sd_global->config.TOLERANCE)
 		{
-			min_cut_obs = c->cuts->val[idx]->cut_obs;
+			min_cut_obs = cell->cuts->val[idx]->cut_obs;
 			oldest_cut = idx;
 		}
 	}
 
-	if (oldest_cut == c->cuts->cnt)
+	if (oldest_cut == cell->cuts->cnt)
 	{
-		print_problem(c->master, "md-check");
-		min_height = cut_height(sd_global, c->cuts->val[0], s->candid_x, c,
-				p->num);
+		print_problem(cell->master, "md-check");
+		min_height = cut_height(sd_global, cell->cuts->val[0], s->candid_x, cell, p->num);
 		oldest_cut = 0;
-		for (idx = 1; idx < c->cuts->cnt; idx++)
+		for (idx = 1; idx < cell->cuts->cnt; idx++)
 		{
 			if (idx == s->incumb_cut)
 			{
 				continue;
 			}
-			height = cut_height(sd_global, c->cuts->val[idx], s->candid_x, c,
-					p->num);
+			height = cut_height(sd_global, cell->cuts->val[idx], s->candid_x, cell, p->num);
 			if (height < min_height)
 			{
 				min_height = height;
@@ -1119,13 +1116,13 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	}
 
 #ifdef DEBUG
-	printf("Dropped cut %d as the oldest\n", c->cuts->val[oldest_cut]->row_num);
+	printf("Dropped cut %d as the oldest\n", cell->cuts->val[oldest_cut]->row_num);
 #endif
 
-	if (c->cuts->val[oldest_cut]->subfeaflag == TRUE)
+	if (cell->cuts->val[oldest_cut]->subfeaflag == TRUE)
 	{
-		drop_cut(oldest_cut, p, c, s);
-		decrease_feacut_rownum(c);
+		drop_cut(oldest_cut, p, cell, s);
+		decrease_feacut_rownum(cell);
 	}
 
 	mem_free(dual);
@@ -1138,8 +1135,7 @@ void reduce_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
  ** increments the slack_cnt of each cut whose dual variable is zero.
  ** It then scans the list of cuts for potential cuts to drop.
  \***********************************************************************/
-void thin_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
-		soln_type *s)
+void thin_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *cell, soln_type *s)
 {
 	int cnt;
 	double *pi, *dual;
@@ -1151,31 +1147,31 @@ void thin_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	/* 
 	 ** Get the dual solution to master, particularly for cut constraints 
 	 */
-	if (!(dual = arr_alloc(p->num->mast_rows+c->cuts->cnt+1, double)))
+	if (!(dual = arr_alloc(p->num->mast_rows+cell->cuts->cnt+1, double)))
 		err_msg("Allocation", "thin_cuts", "dual");
-	get_dual(dual, c->master, p->num,
-			p->num->mast_rows + c->cuts->cnt + c->feasible_cuts_added->cnt);
+	get_dual(dual, cell->master, p->num,
+			p->num->mast_rows + cell->cuts->cnt + cell->feasible_cuts_added->cnt);
 	pi = dual + p->num->mast_rows;
 
 	/* 
 	 ** For every cut, check its dual.  If it is zero, increment slack_cnt
 	 ** and check whether it has exceeded the limit.  If so, drop it.
 	 */
-	for (cnt = c->cuts->cnt - 1; cnt >= 0; cnt--)
+	for (cnt = cell->cuts->cnt - 1; cnt >= 0; cnt--)
 		if (DBL_ABS(pi[cnt]) <= sd_global->config.TOLERANCE
 				&& cnt != s->incumb_cut
-				&& c->cuts->val[cnt]->subfeaflag == TRUE)
-			if ((++c->cuts->val[cnt]->slack_cnt) >= sd_global->config.DROP_TIME)
+				&& cell->cuts->val[cnt]->subfeaflag == TRUE)
+			if ((++cell->cuts->val[cnt]->slack_cnt) >= sd_global->config.DROP_TIME)
 			{
 #ifdef RUN
 				printf("\n**Dropped cut %d for being slack\n\n", cnt);
 #endif
-				drop_cut(cnt, p, c, s);
+				drop_cut(cnt, p, cell, s);
 			}
 			else
 				/* nothing */;
 		else
-			c->cuts->val[cnt]->slack_cnt = 0;
+			cell->cuts->val[cnt]->slack_cnt = 0;
 
 	/* What if the incumbent cut has been slack for DROP_TIME iterations ? */
 	/* It better not be... re-form it at least! */
@@ -1200,7 +1196,7 @@ void thin_cuts(sdglobal_type* sd_global, prob_type *p, cell_type *c,
  ** a new cut is through add_cut, and the only way to get rid of one 
  ** is through drop_cut... control of data...
  \***********************************************************************/
-void drop_cut(int cut_idx, prob_type *p, cell_type *c, soln_type *s)
+void drop_cut(int cut_idx, prob_type *p, cell_type *cell, soln_type *s)
 {
 	int row; /* Row number in constraint matrix */
 	int idx;
@@ -1216,27 +1212,27 @@ void drop_cut(int cut_idx, prob_type *p, cell_type *c, soln_type *s)
 	 */
 
 	/* Get rid of the old cut */
-	row = c->cuts->val[cut_idx]->row_num;
-	if (!remove_row(c->master, row))
+	row = cell->cuts->val[cut_idx]->row_num;
+	if (!remove_row(cell->master, row))
 	{
-		print_contents(c->master, "contents.out");
+		print_contents(cell->master, "contents.out");
 		err_msg("remove_row", "drop_cut", "returned FALSE");
 	}
-	free_cut(c->cuts->val[cut_idx]);
+	free_cut(cell->cuts->val[cut_idx]);
 
 #ifdef DEBUG
 	printf("cuts->cnt=%d, row=%d, s->incumb_cut=%d\n",
-			c->cuts->cnt, row, s->incumb_cut);
+			cell->cuts->cnt, row, s->incumb_cut);
 #endif
 
 	/* Update the surviving cuts */
-	c->cuts->val[cut_idx] = c->cuts->val[--c->cuts->cnt];
-	for (idx = 0; idx < c->cuts->cnt; idx++)
-		if (c->cuts->val[idx]->row_num > row)
-			--c->cuts->val[idx]->row_num;
+	cell->cuts->val[cut_idx] = cell->cuts->val[--cell->cuts->cnt];
+	for (idx = 0; idx < cell->cuts->cnt; idx++)
+		if (cell->cuts->val[idx]->row_num > row)
+			--cell->cuts->val[idx]->row_num;
 
 	/* Worry about swapping down the incumbent cut */
-	if (s->incumb_cut == c->cuts->cnt)
+	if (s->incumb_cut == cell->cuts->cnt)
 		s->incumb_cut = cut_idx;
 
 	/* What if the incumbent cut was the one that was swapped? */
@@ -1267,8 +1263,7 @@ void drop_cut(int cut_idx, prob_type *p, cell_type *c, soln_type *s)
  ** Doesn't work for cells!!! cuts->cnt may be larger than p->num->max_cuts
  ** if there were many ancestor cuts!!!! 
  \***********************************************************************/
-int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
-		soln_type *s)
+int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *cell, soln_type *s)
 {
 	int beg_col; /* column where beta coefficients begin */
 	int end_col; /* column where beta coefficients finish */
@@ -1289,19 +1284,19 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 	 */
 
 	/* Insure that there is room to add another cut */
-	if (c->cuts->cnt >= p->num->max_cuts)
-		reduce_cuts(sd_global, p, c, s);
+	if (cell->cuts->cnt >= p->num->max_cuts)
+		reduce_cuts(sd_global, p, cell, s);
 //	else
 //		reach_max_cuts = FALSE;
 
 	/*deleate all feasibility cuts so that the new optimality cut can be added to the end of the optimality cuts  Yifan /03/09/2012*/
-	for (cnt = c->feasible_cuts_added->cnt - 1; cnt >= 0; cnt--)
+	for (cnt = cell->feasible_cuts_added->cnt - 1; cnt >= 0; cnt--)
 	{
-		row = c->feasible_cuts_added->val[cnt]->row_num;
-		if (!remove_row(c->master, row))
+		row = cell->feasible_cuts_added->val[cnt]->row_num;
+		if (!remove_row(cell->master, row))
 		{
-			print_problem(c->master, "master_errors_notice");
-			print_contents(c->master, "contents.out");
+			print_problem(cell->master, "master_errors_notice");
+			print_contents(cell->master, "contents.out");
 			err_msg("remove_row", "drop_cut", "returned FALSE");
 		}
 	}
@@ -1324,10 +1319,10 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 	 */
 	/*
 	 if (cut->subfeaflag==FALSE) {
-	 for (idx=0; idx<c->cuts->cnt; idx++) {
-	 if (idx<c->cuts->val[idx]->subfeaflag==FALSE) {
-	 if (DBL_ABS(cut->alpha-c->cuts->val[idx]->alpha)<sd_global->config.TOLERANCE) {
-	 if (equal_arr(cut->beta, c->cuts->val[idx]->beta, p->num->mast_cols,sd_global->config.TOLERANCE)) {
+	 for (idx=0; idx<cell->cuts->cnt; idx++) {
+	 if (idx<cell->cuts->val[idx]->subfeaflag==FALSE) {
+	 if (DBL_ABS(cut->alpha-cell->cuts->val[idx]->alpha)<sd_global->config.TOLERANCE) {
+	 if (equal_arr(cut->beta, cell->cuts->val[idx]->beta, p->num->mast_cols,sd_global->config.TOLERANCE)) {
 	 new_cut = FALSE;
 	 }
 	 }
@@ -1346,7 +1341,7 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 
 #ifdef DEBUG
 	printf("Adding the row:\n");
-	print_vect(cut->beta, end_col - beg_col, "c->beta");
+	print_vect(cut->beta, end_col - beg_col, "cell->beta");
 #endif
 
 	/*
@@ -1379,37 +1374,37 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 	 fprintf (g_FilePointer, "inc_x[%d] = %f,  beta[%d] = %f\n", 
 	 cnt+1, s->incumb_x[cnt+1], cnt+1, cut->beta[cnt+1]); 
 	 */
-	if (!add_row(c->master, beg_col, end_col, coef_col, cut->beta, GE, rhs))
+	if (!add_row(cell->master, beg_col, end_col, coef_col, cut->beta, GE, rhs))
 		err_msg("LP solver", "add_cut", "ans");
 
 	/* Yifan 03/04/2012 Updated for Feasibility Cuts*/
-	cut->row_num = p->num->mast_rows + c->cuts->cnt;
+	cut->row_num = p->num->mast_rows + cell->cuts->cnt;
 
 	/* Since a new optimality cut is added, the row number of every feasibility cut will increase by 1*/
-	for (cnt = 0; cnt < c->feasible_cuts_added->cnt; cnt++)
+	for (cnt = 0; cnt < cell->feasible_cuts_added->cnt; cnt++)
 	{
-		++c->feasible_cuts_added->val[cnt]->row_num;
+		++cell->feasible_cuts_added->val[cnt]->row_num;
 	}
 
 	/* add all the removed feasibility cuts back to the problem after optimality cuts*/
-	for (cnt = 0; cnt < c->feasible_cuts_added->cnt; cnt++)
+	for (cnt = 0; cnt < cell->feasible_cuts_added->cnt; cnt++)
 	{
 		if (sd_global->config.MASTER_TYPE == SDLP)
-			rhs = c->feasible_cuts_added->val[cnt]->alpha;
+			rhs = cell->feasible_cuts_added->val[cnt]->alpha;
 		else
-			rhs = c->feasible_cuts_added->val[cnt]->alpha
-					- CxX(c->feasible_cuts_added->val[cnt]->beta, s->incumb_x,
+			rhs = cell->feasible_cuts_added->val[cnt]->alpha
+					- CxX(cell->feasible_cuts_added->val[cnt]->beta, s->incumb_x,
 							p->num->mast_cols) + sd_global->config.FEA_TOLER;
 		/* putshing the solution a little inside the boundary 04/30/2013 Yifan*/
 
-		if (!add_row(c->master, beg_col, end_col, coef_col,
-				c->feasible_cuts_added->val[cnt]->beta, GE, rhs))
+		if (!add_row(cell->master, beg_col, end_col, coef_col,
+				cell->feasible_cuts_added->val[cnt]->beta, GE, rhs))
 			err_msg("LP solver", "add_cut_to_master", "ans");
 	}
 
 	mem_free(coef_col);
 
-	c->cuts->val[c->cuts->cnt] = cut;
+	cell->cuts->val[cell->cuts->cnt] = cut;
 
 	/* Print all the cuts after adding a cut, for the purpose of cut index
 	 checking. zl  
@@ -1417,11 +1412,10 @@ int add_cut(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *c,
 	 print_cut_info(c, p->num, "After adding a cut");
 	 */
 
-	return c->cuts->cnt++;
+	return cell->cuts->cnt++;
 }
 
-void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p,
-		cell_type *c, soln_type *s, int idx)
+void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p, cell_type *cell, soln_type *s, int idx)
 {
 	int beg_col; /* column where beta coefficients begin */
 	int end_col; /* column where beta coefficients finish */
@@ -1457,7 +1451,7 @@ void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p,
 
 #ifdef DEBUG
 	printf("Adding the row:\n");
-	print_vect(cut->beta, end_col - beg_col, "c->beta");
+	print_vect(cut->beta, end_col - beg_col, "cell->beta");
 #endif
 
 	/*
@@ -1487,12 +1481,11 @@ void add_cut_to_master(sdglobal_type* sd_global, one_cut *cut, prob_type *p,
 	 cnt+1, s->incumb_x[cnt+1], cnt+1, cut->beta[cnt+1]); 
 	 */
 
-	if (!add_row_to_master(c->master, beg_col, end_col, coef_col, cut->beta, GE,
-			rhs))
+	if (!add_row_to_master(cell->master, beg_col, end_col, coef_col, cut->beta, GE, rhs))
 		err_msg("LP solver", "add_cut", "ans");
 	/* THIS IS A SERIOUS PROBLEM, ROW_NUM IS NOT CORRECT, ONLY ONE CUT IN MASTER!!!*/
 	/* Yifan 03/11/2012 Be careful of this row number*/
-	cut->row_num = p->num->mast_rows + c->cuts->cnt + idx;
+	cut->row_num = p->num->mast_rows + cell->cuts->cnt + idx;
 
 	mem_free(coef_col);
 
@@ -1729,7 +1722,7 @@ void print_cut(cut_type *cuts, num_type *num, int idx)
 ** This function prints some information of a cut for the purpose of
  ** cut index checking. zl
  \**********************************************************************/
-void print_cut_info(cell_type *c, num_type *num, char *phrase)
+void print_cut_info(cell_type *cell, num_type *num, char *phrase)
 {
 	int cnt;
 	int idx;
@@ -1751,7 +1744,7 @@ void print_cut_info(cell_type *c, num_type *num, char *phrase)
 	g_FilePointer = fopen("cuts_idx.out", "a");
 	fprintf(g_FilePointer, "-------------%s-------------- \n\n", phrase);
 
-	num_rows = get_numrows(c->master); /* 2011.10.30 */
+	num_rows = get_numrows(cell->master); /* 2011.10.30 */
 
 	if (0 == num_rows)
 	{
@@ -1760,14 +1753,14 @@ void print_cut_info(cell_type *c, num_type *num, char *phrase)
 	}
 	fprintf(g_FilePointer, "\nCPLEX: # of rows = %d.", num_rows);
 
-	num_cuts = num_rows - c->master->mar;
-	fprintf(g_FilePointer, "\nMaster: # of rows = %d.", c->master->mar);
+	num_cuts = num_rows - cell->master->mar;
+	fprintf(g_FilePointer, "\nMaster: # of rows = %d.", cell->master->mar);
 	fprintf(g_FilePointer, "\nOur structure: # of cuts = %d.\n", num_cuts);
 
 	/*
 	 int rmatspace; 
-	 status = get_rows(c->master, &nzcnt, NULL, NULL, NULL,
-	 0, &surplus, c->master->mar, num_rows-1);  
+	 status = get_rows(cell->master, &nzcnt, NULL, NULL, NULL,
+	 0, &surplus, cell->master->mar, num_rows-1);
 	 rmatspace = -surplus; 
 	 if (status) {
 	 fprintf(g_FilePointer, "\nFail to get rmatspace. Error #%d", status);
@@ -1776,8 +1769,8 @@ void print_cut_info(cell_type *c, num_type *num, char *phrase)
 	 
 	 */
 
-	status = get_rows(c->master, &nzcnt, rmatbeg, rmatind, rmatval, 200,
-			&surplus, c->master->mar, num_rows - 1); /* 2011.10.30 */
+	status = get_rows(cell->master, &nzcnt, rmatbeg, rmatind, rmatval, 200,
+			&surplus, cell->master->mar, num_rows - 1); /* 2011.10.30 */
 	/*
 	 fprintf(g_FilePointer, "\nsurplus = %d", surplus);
 	 */
@@ -1788,27 +1781,27 @@ void print_cut_info(cell_type *c, num_type *num, char *phrase)
 		exit(1);
 	}
 
-	for (idx = 0; idx < c->cuts->cnt; idx++)
+	for (idx = 0; idx < cell->cuts->cnt; idx++)
 	{
 
 		/* Print cuts in our structure. */
 
-		m = c->cuts->val[idx]->row_num; /*  the cut's row # in master constraint matrix. zl */
+		m = cell->cuts->val[idx]->row_num; /*  the cut's row # in master constraint matrix. zl */
 
 		fprintf(g_FilePointer,
 				"\n***OurCut[#%d], Row # in master constraint matrix: %d.***\n",
 				idx, m);
 		for (cnt = 0; cnt <= num->mast_cols; cnt++)
 			fprintf(g_FilePointer, "::%d: %f ", cnt,
-					c->cuts->val[idx]->beta[cnt]);
+					cell->cuts->val[idx]->beta[cnt]);
 
 		/* Print cuts in CPLEX structure. */
 
 		fprintf(g_FilePointer, "\n+++CPLEX[#%d]+++\n", m);
 
-		n = m - c->master->mar; /* the row # among the rows got from get_rows(). zl */
+		n = m - cell->master->mar; /* the row # among the rows got from get_rows(). zl */
 
-		if (n == c->cuts->cnt - 1)
+		if (n == cell->cuts->cnt - 1)
 		{
 			for (j = rmatbeg[n]; j < nzcnt; j++)
 				fprintf(g_FilePointer, "::%d: %f ", rmatind[j], rmatval[j]);

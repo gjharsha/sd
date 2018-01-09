@@ -120,8 +120,7 @@ BOOL solve_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
  ** the cuts, and finally solves the master problem.
  ** It returns TRUE if the problem was solved; FALSE otherwise.
  \***********************************************************************/
-BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
-		soln_type *s)
+BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *cell, soln_type *s)
 {
 	BOOL ans;
 //	double gamma;
@@ -147,14 +146,14 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	/* In regularized QP method, we switch from dual simplex optimizer to
 	 barrier optimizer for solving quadratic master problem. zl */
 
-	change_solver_barrier(c->master);
+	change_solver_barrier(cell->master);
 
 	/* Update eta coefficient on all cuts, based on cut_obs */
-	change_eta_col(c->master, c->cuts, c->k, s, p->num);
+	change_eta_col(cell->master, cell->cuts, cell->k, s, p->num);
 
 	if (sd_global->config.LB_TYPE == 1)
 	{
-		update_rhs(sd_global, p, c, s);
+		update_rhs(sd_global, p, cell, s);
 	}
 
 #ifdef SAVE
@@ -162,25 +161,26 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	fname[7] = '0' + mnum / 10 % 10;
 	fname[8] = '0' + mnum / 1 % 10;
 	++mnum;
-	print_problem(c->master, fname);
+	print_problem(cell->master, fname);
 	printf("Saving file: %s\n", fname);
 #endif
 
 	/* Recording the time for solving master QPs. zl, 06/29/04. */
 	start = clock();
-	ans = solve_problem(sd_global, c->master);
+	write_prob(cell->master, "master.lp");
+	ans = solve_problem(sd_global, cell->master);
 	end = clock();
 	s->run_time->soln_master_iter = ((double) (end - start)) / CLOCKS_PER_SEC;
 	s->run_time->soln_master_accum += s->run_time->soln_master_iter;
 
-	c->LP_cnt++; /* # of LPs solved increase by 1. zl 06/30/02 */
+	cell->LP_cnt++; /* # of LPs solved increase by 1. zl 06/30/02 */
 
-	s->opt_value = get_objective(c->master);
+	s->opt_value = get_objective(cell->master);
 	/*
 	 fprintf(g_FilePointer, "\n****** In solve_QP_master ******\n");
 	 */
 	/* Get the most recent optimal solution to master program */
-	get_primal(s->candid_x, c->master, p->num->mast_cols);
+	get_primal(s->candid_x, cell->master, p->num->mast_cols);
 
 	if (s->opt_value > s->incumb_est)
 	{
@@ -216,14 +216,14 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 #endif
 
 	/* update d_norm_k in soln_type. */
-	if (c->k == 1)
+	if (cell->k == 1)
 		s->norm_d_k_1 = d2;
 	s->norm_d_k = d2;
 
 #ifdef CAL_CHECK
 	fprintf(g_FilePointer, "\n***in master.c, solve_QP_master. ***\n");
-	fprintf(g_FilePointer, "c->k = %d, d2 = %f, norm_d_k_1 = %f, norm_d_k = %f\n",
-			c->k, d2, s->norm_d_k_1, s->norm_d_k);
+	fprintf(g_FilePointer, "cell->k = %d, d2 = %f, norm_d_k_1 = %f, norm_d_k = %f\n",
+			cell->k, d2, s->norm_d_k_1, s->norm_d_k);
 #endif
 
 	/* Calculating the one_norm of 'x'.  zl */
@@ -231,15 +231,15 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 	/* Get the dual solution too, JH 4/8/98 */
 	/* Yifan 03/12/2012 Updated for Feasibility Cuts, make sure the total number is correct here*/
-	get_dual(s->Master_pi, c->master, p->num,
-			p->num->mast_rows + c->cuts->cnt + c->feasible_cuts_added->cnt);
+	get_dual(s->Master_pi, cell->master, p->num,
+			p->num->mast_rows + cell->cuts->cnt + cell->feasible_cuts_added->cnt);
 
 	/* Yifan 03/19/2012 Test duals*/
 #if 0
-	printf("c->k:%d\n",c->k);
+	printf("cell->k:%d\n",cell->k);
 
 	printf("\nTESTING DUALS\n");
-	for (i=0; i< p->num->mast_rows + c->cuts->cnt + c->feasible_cuts_added->cnt; i++)
+	for (i=0; i< p->num->mast_rows + cell->cuts->cnt + cell->feasible_cuts_added->cnt; i++)
 	{
 		printf("dual[%d]:%f\n",i+1, s->Master_pi[i+1]);
 	}
@@ -253,15 +253,15 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 #endif
 
 	/*
-	 for (i=0 ; i< p->num->mast_rows + c->cuts->cnt+c->feasible_cuts_added->cnt; i++) {
+	 for (i=0 ; i< p->num->mast_rows + cell->cuts->cnt+cell->feasible_cuts_added->cnt; i++) {
 	 printf("s->Master_pi[%d]:%f\n",i,s->Master_pi[i]);
 	 }
 	 */
 
-	get_dual_slacks(s->Master_dj, c->master, NULL, p->num->mast_cols + 1);
+	get_dual_slacks(s->Master_dj, cell->master, NULL, p->num->mast_cols + 1);
 
 #ifdef CAL_CHECK
-	write_prob(c->master, "quad_cut.lp");
+	write_prob(cell->master, "quad_cut.lp");
 #endif
 
 	/* Find the highest cut at the candidate solution. 
@@ -270,45 +270,45 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	 */
 
 	/*
-	 printf("c->cuts->val->cnt is %d\n",c->cuts->cnt);
-	 printf("c->cuts->val[0]->alpha is what???\n");
+	 printf("cell->cuts->val->cnt is %d\n",cell->cuts->cnt);
+	 printf("cell->cuts->val[0]->alpha is what???\n");
 	 */
 
-	if (c->cuts->cnt > 0)
+	if (cell->cuts->cnt > 0)
 	{
 
 		/*modified by Yifan to avoid evaluating feasibility cut 02/26/2011*/
-		if (c->cuts->val[0]->subfeaflag == TRUE)
+		if (cell->cuts->val[0]->subfeaflag == TRUE)
 		{
-			//printf("c->cuts->val[0]->alpha is %f\n",c->cuts->val[0]->alpha);
-			/*  Sm = c->cuts->val[0]->alpha - CxX(c->cuts->val[0]->beta, s->candid_x,
+			//printf("cell->cuts->val[0]->alpha is %f\n",cell->cuts->val[0]->alpha);
+			/*  Sm = cell->cuts->val[0]->alpha - CxX(cell->cuts->val[0]->beta, s->candid_x,
 			 p->num->mast_cols);*/
 			/* Yifan 03/14/2012 Updated for optimality cut height*/
-			Sm = cut_height(sd_global, c->cuts->val[0], s->candid_x, c, p->num);
+			Sm = cut_height(sd_global, cell->cuts->val[0], s->candid_x, cell, p->num);
 
 			/* Be careful to update alpha and beta based on the change of the 
 			 coefficients of eta column.  zl */
-			/* Sm *= (double)c->cuts->val[0]->cut_obs / (double)c->k;*/
+			/* Sm *= (double)cell->cuts->val[0]->cut_obs / (double)cell->k;*/
 		}
 		else
 			Sm = -INFBOUND;
 
 #ifdef CAL_CHECK
 		fprintf(g_FilePointer, "\nht[0] = %f, row_num = %d :: ", Sm,
-				c->cuts->val[0]->row_num);
+				cell->cuts->val[0]->row_num);
 #endif
 
-		for (i = 1; i < c->cuts->cnt; i++)
+		for (i = 1; i < cell->cuts->cnt; i++)
 		{
 
-			/*ht = c->cuts->val[i]->alpha - CxX(c->cuts->val[i]->beta, s->candid_x,
+			/*ht = cell->cuts->val[i]->alpha - CxX(cell->cuts->val[i]->beta, s->candid_x,
 			 p->num->mast_cols);
-			 ht *= (double)c->cuts->val[i]->cut_obs / (double)c->k;*/
+			 ht *= (double)cell->cuts->val[i]->cut_obs / (double)cell->k;*/
 			/* Yifan 03/14/2012 Updated for optimality cut height*/
-			ht = cut_height(sd_global, c->cuts->val[i], s->candid_x, c, p->num);
+			ht = cut_height(sd_global, cell->cuts->val[i], s->candid_x, cell, p->num);
 #ifdef CAL_CHECK
 			fprintf(g_FilePointer, "ht[%d] = %f, row_num = %d :: ", i, ht,
-					c->cuts->val[i]->row_num);
+					cell->cuts->val[i]->row_num);
 #endif
 			if (Sm < ht)
 				Sm = ht;
@@ -326,7 +326,7 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 		}
 	}
 
-	get_x(c->master, eta, p->num->mast_cols, p->num->mast_cols); /* 2011.10.30 */
+	get_x(cell->master, eta, p->num->mast_cols, p->num->mast_cols); /* 2011.10.30 */
 
 #ifdef CAL_CHECK
 	fprintf(g_FilePointer, "\nSm = %f, eta = %f \n", Sm, eta[0]);
@@ -334,14 +334,14 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 	/* s->candid_est = c(xbar+d) + max{cut_height} */
 
-	/*s->candid_est = s->opt_value + CxX(p->c, s->incumb_x, p->num->mast_cols)- d2 * c->quad_scalar / 2.0;*/
+	/*s->candid_est = s->opt_value + CxX(p->c, s->incumb_x, p->num->mast_cols)- d2 * cell->quad_scalar / 2.0;*/
 	s->candid_est = Sm + CxX(p->c, s->candid_x, p->num->mast_cols);
 	/*s->candid_est = s->opt_value;*/
 
 	/* Calculate gamma for next improvement check on incumbent x */
 	/* if it is not solved in opt mode, the gamma will not change*/
 	/* gamma will be updated with 0.0 when incumbent sub is infeasibile*/
-	if (c->opt_mode == TRUE)
+	if (cell->opt_mode == TRUE)
 	{
 		s->gamma = s->candid_est - s->incumb_est;
 	}
@@ -356,7 +356,7 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 
 	/* s->candid_est = d_obj + c*xbar - quad_scalar*d2/2. */
 //	candid_est = s->opt_value + CxX(p->c, s->incumb_x, p->num->mast_cols)
-//			- d2 * c->quad_scalar / 2.0;
+//			- d2 * cell->quad_scalar / 2.0;
 	/* Calculate gamma for next improvement check on incumbent x */
 //	gamma = candid_est - s->incumb_est;
 #ifdef CAL_CHECK
@@ -368,7 +368,7 @@ BOOL solve_QP_master(sdglobal_type* sd_global, prob_type *p, cell_type *c,
 	 optimizer to primal simplex optimizer each time after solving the 
 	 quadratic master problem. zl */
 
-	change_solver_primal(c->master);
+	change_solver_primal(cell->master);
 
 	//mem_free(eta);  //Deleted by Yifan since _eta_ is not allocated above April 27 2011
 

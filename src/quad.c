@@ -148,18 +148,13 @@ void construct_batch_QP(sdglobal_type* sd_global, prob_type *p, cell_type *c,
  described above. 
  \****************************************************************************/
 
-void change_rhs(prob_type *p, cell_type *c, soln_type *s)
-{
+void change_rhs(prob_type *p, cell_type *c, soln_type *s) {
 	int status = 0;
 	int cnt;
 	int idx;
 	double *rhs1;
 	double *rhs;
 	int *indices;
-
-#ifdef TRACE
-	printf("Inside change_rhs.\n");
-#endif
 
 	if (!(rhs1 = arr_alloc(p->num->mast_rows+1, double)))
 		err_msg("Allocation", "change_rhs", "rhs1");
@@ -171,154 +166,51 @@ void change_rhs(prob_type *p, cell_type *c, soln_type *s)
 		err_msg("Allocation", "change_rhs", "indices");
 
 	/*** new rhs = b - A * xbar ***/
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n***** new rhs = b - A * xbar *****\n");
-#endif
 	/* Be careful with the one_norm!! In the TxX() routine, it assumes the 0th
 	 element is reserved for the 1_norm, in the returned vector, the T sparse 
 	 vector, and the x vector. */
 
-	for (cnt = 0; cnt < p->num->mast_rows; cnt++)
-	{
+	for (cnt = 0; cnt < p->num->mast_rows; cnt++) {
 		rhs1[cnt + 1] = p->master->rhsx[cnt];
-
-#ifdef CAL_CHECK
-		fprintf(g_FilePointer, "rhs[%d] = %f, ", cnt+1, rhs1[cnt+1]);
-#endif
 	}
-
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n");
-
-	/* Print out the A matrix. */
-
-	fprintf(g_FilePointer, "++++++ A matrix ++++++");
-	for (cnt = 1; cnt<=p->A->cnt; cnt++)
-	{
-		fprintf(g_FilePointer, "cnt = %d, val = %f, row = %d, col = %d\n",
-				cnt, p->A->val[cnt], p->A->row[cnt], p->A->col[cnt]);
-	}
-#endif
 
 	TxX(p->A, s->incumb_x, rhs1);
 
-#ifdef CAL_CHECK
-	/* Print out incumbent X. */
-	for (cnt=0; cnt<p->num->mast_cols; cnt++)
-	printf ("X[%d] = %f, ", cnt+1, s->incumb_x[cnt+1]);
-	printf ("\n");
-
-	/* Print out rhs - AxX. */
-	for (cnt=1; cnt<=p->num->mast_rows; cnt++)
-	printf ("rhs[%d] = %f, ", cnt, rhs1[cnt]);
-	printf("\n");
-
-	for (cnt=0; cnt<p->num->mast_cols; cnt++)
-	fprintf (g_FilePointer, "X[%d] = %f, ", cnt+1, s->incumb_x[cnt+1]);
-	fprintf (g_FilePointer, "\n");
-
-	/* Print out rhs - AxX. */
-	for (cnt=1; cnt<=p->num->mast_rows; cnt++)
-	fprintf (g_FilePointer, "rhs[%d] = %f, ", cnt, rhs1[cnt]);
-	fprintf(g_FilePointer, "\n");
-#endif
-
 	/* Reassign values of rhs1 and print out the new rhs. */
-	for (cnt = 0; cnt < p->num->mast_rows; cnt++)
-	{
+	for (cnt = 0; cnt < p->num->mast_rows; cnt++) {
 		indices[cnt] = cnt;
 		rhs[cnt] = rhs1[cnt + 1];
-
-#ifdef CAL_CHECK
-		fprintf (g_FilePointer, "rhs[%d] = %f, ", cnt+1, rhs[cnt]);
-#endif
 	}
 
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n");
-#endif
-
 	/*** new rhs = alpha - beta * xbar ***/
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n***** rhs = alpha - beta * xbar *****");
-#endif
-	for (cnt = 0; cnt < c->cuts->cnt; cnt++)
-	{
-#ifdef CAL_CHECK
-		fprintf(g_FilePointer, "\nCut #%d:\n", cnt);
-#endif
+	for (cnt = 0; cnt < c->cuts->cnt; cnt++) {
 		rhs[p->num->mast_rows + cnt] = c->cuts->val[cnt]->alpha;
-#ifdef CAL_CHECK
-		fprintf (g_FilePointer, "row_num = %d, alpha[%d] = %f\n",
-				c->cuts->val[cnt]->row_num, cnt, c->cuts->val[cnt]->alpha);
-#endif
-		for (idx = 1; idx <= p->num->mast_cols; idx++)
-		{
-#ifdef CAL_CHECK
-			fprintf (g_FilePointer, "beta[%d] = %f, ", idx,
-					c->cuts->val[cnt]->beta[idx]);
-#endif
-			rhs[p->num->mast_rows + cnt] -= c->cuts->val[cnt]->beta[idx]
-					* s->incumb_x[idx];
+		for (idx = 1; idx <= p->num->mast_cols; idx++) {
+			rhs[p->num->mast_rows + cnt] -= c->cuts->val[cnt]->beta[idx] * s->incumb_x[idx];
 		}
 		indices[p->num->mast_rows + cnt] = c->cuts->val[cnt]->row_num;
-		/* Yifan 04/04/2012 record "alpha - beta x incumb_x" for later use */
-		/* in updating "alpha + (1 - t/k) x eta0" */
+		/* Yifan 04/04/2012 record "alpha - beta x incumb_x" for later use in updating "alpha + (1 - t/k) x eta0" */
 		c->cuts->val[cnt]->alpha_incumb = rhs[p->num->mast_rows + cnt];
-#ifdef CAL_CHECK
-		fprintf (g_FilePointer, "\nindices[%d] = %d, rhs[%d] = %f.",
-				p->num->mast_rows+cnt, indices[p->num->mast_rows+cnt],
-				p->num->mast_rows+cnt, rhs[p->num->mast_rows+cnt]);
-#endif
 	}
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n");
-#endif
-	/**Do the same thing for feasibility cut**/
+
+	/**Do the same thing for feasibility cut **/
 	/*** new rhs = alpha - beta * xbar ***/
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n***** rhs = alpha - beta * xbar for feasibility cut*****");
-#endif
-	for (cnt = 0; cnt < c->feasible_cuts_added->cnt; cnt++)
-	{
-#ifdef CAL_CHECK
-		fprintf(g_FilePointer, "\nCut #%d:\n", cnt);
-#endif
+	for (cnt = 0; cnt < c->feasible_cuts_added->cnt; cnt++) {
 		rhs[p->num->mast_rows + c->cuts->cnt + cnt] =
 				c->feasible_cuts_added->val[cnt]->alpha;
-#ifdef CAL_CHECK
-		fprintf (g_FilePointer, "row_num = %d, alpha[%d] = %f\n",
-				c->feasible_cuts_added->val[cnt]->row_num, cnt, c->feasible_cuts_added->val[cnt]->alpha);
-#endif
-		for (idx = 1; idx <= p->num->mast_cols; idx++)
-		{
-#ifdef CAL_CHECK
-			fprintf (g_FilePointer, "beta[%d] = %f, ", idx,
-					c->feasible_cuts_added->val[cnt]->beta[idx]);
-#endif
-			rhs[p->num->mast_rows + c->cuts->cnt + cnt] -=
-					c->feasible_cuts_added->val[cnt]->beta[idx]
-							* s->incumb_x[idx];
+		for (idx = 1; idx <= p->num->mast_cols; idx++) {
+			rhs[p->num->mast_rows + c->cuts->cnt + cnt] -= c->feasible_cuts_added->val[cnt]->beta[idx] * s->incumb_x[idx];
 		}
 		indices[p->num->mast_rows + c->cuts->cnt + cnt] =
 				c->feasible_cuts_added->val[cnt]->row_num;
-#ifdef CAL_CHECK
-		fprintf (g_FilePointer, "\nindices[%d] = %d, rhs[%d] = %f.",
-				p->num->mast_rows+c->cuts->cnt+cnt, indices[p->num->mast_rows+c->cuts->cnt+cnt],
-				p->num->mast_rows+c->cuts->cnt+cnt, rhs[p->num->mast_rows+c->cuts->cnt+cnt]);
-#endif
 	}
-#ifdef CAL_CHECK
-	fprintf(g_FilePointer, "\n");
-#endif
 
 	/* Now we change the rhs of the master problem. */
 	status = change_rhside(c->master,
 			p->num->mast_rows + c->cuts->cnt + c->feasible_cuts_added->cnt,
 			indices, rhs); /* 2011.10.30 */
 
-	if (status)
-	{
+	if (status) {
 		fprintf(stderr, "Failed to change the rhs in CPLEX.\n");
 		exit(1);
 	}
